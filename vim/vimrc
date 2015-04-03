@@ -22,6 +22,7 @@ Plugin 'edkolev/tmuxline.vim'
 Plugin 'bling/vim-airline'
 Plugin 'bling/vim-bufferline'
 Plugin 'fweep/vim-tabber'
+Plugin 'cytb/vimairline-powerlineish-modified'
 
 call vundle#end()
 filetype plugin indent on
@@ -45,13 +46,6 @@ let g:lightline = {
 		\ }
 
 "----------------------------------------------------------
-" Powerline
-"----------------------------------------------------------
-" Plugin 'powerline/powerline'
-" set rtp+=~/.vim/bundle/powerline/powerline/bindings/vim
-
-
-"----------------------------------------------------------
 " Tabline
 "----------------------------------------------------------
 set tabline=%!tabber#TabLine()
@@ -64,7 +58,7 @@ set tabline=%!tabber#TabLine()
 " let g:promptline_preset = 'full'
 " let g:airline_theme='powerlineish'
 " let g:airline_theme='luna'
-let g:airline_theme='powerlinec'
+let g:airline_theme='luna'
 let g:airline_powerline_fonts = 1
 
 let g:tmuxline_preset = 'powerline'
