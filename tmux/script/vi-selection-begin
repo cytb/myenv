@@ -1,0 +1,7 @@
+# copy -> selection
+source "$HOME/.tmux/script/vi-unbind-keys"
+bind-key -n y source "$HOME/.tmux/script/vi-selection-end"
+bind-key -n Enter source "$HOME/.tmux/script/vi-selection-end"
+bind-key -t vi-copy T begin-selection
+source "$HOME/.tmux/script/vi-next-mode"
+

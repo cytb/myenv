@@ -1,0 +1,3 @@
+# selection -> copy -> normal
+send-keys T
+unbind-key -t vi-copy T

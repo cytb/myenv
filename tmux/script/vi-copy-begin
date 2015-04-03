@@ -1,0 +1,7 @@
+# normal -> copy
+bind-key -n v source "$HOME/.tmux/script/vi-selection-begin"
+bind-key -n y send-keys 0 \; source "$HOME/.tmux/script/vi-selection-begin" \; send-keys "\$"
+bind-key -n V send-keys 0 \; source "$HOME/.tmux/script/vi-selection-begin" \; send-keys "\$"
+bind-key -n q source "$HOME/.tmux/script/vi-selection-cancel"
+bind-key -n Enter source "$HOME/.tmux/script/vi-unbind-keys" \; send-keys Enter
+copy-mode

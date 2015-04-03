@@ -1,0 +1,456 @@
+syntax on
+
+"----------------------------------------------------------
+"   Vundle
+"----------------------------------------------------------
+set nocompatible
+filetype off
+set rtp+=~/.vim/bundle/Vundle.vim
+call vundle#begin()
+
+Plugin 'gmarik/Vundle.vim'
+Plugin 'scrooloose/nerdtree'
+" Plugin 'vim-scripts/minibufexplorerpp'
+Plugin 'vim-scripts/omlet.vim'
+" Plugin 'Shougo/neocomplete.vim'
+" Plugin 'Shougo/vimproc.vim'
+Plugin 'lukerandall/haskellmode-vim'
+Plugin 'eagletmt/ghcmod-vim'
+Plugin 'thinca/vim-quickrun'
+Plugin 'edkolev/promptline.vim'
+Plugin 'edkolev/tmuxline.vim'
+Plugin 'bling/vim-airline'
+Plugin 'bling/vim-bufferline'
+Plugin 'fweep/vim-tabber'
+
+call vundle#end()
+filetype plugin indent on
+
+"----------------------------------------------------------
+"   lightline
+"----------------------------------------------------------
+" Plugin 'itchyny/lightline.vim'
+
+let g:lightline = {
+		\ 'component': {
+		\   'lineinfo': '? %3l:%-2v',
+		\ },
+		\ 'component_function': {
+		\   'readonly': 'MyReadonly',
+		\   'fugitive': 'MyFugitive'
+		\ },
+		\ 'separator': { 'left': '', 'right': '' },
+		\ 'subseparator': { 'left': '', 'right': '' },
+		\ 'colorscheme': 'wombat'
+		\ }
+
+"----------------------------------------------------------
+" Powerline
+"----------------------------------------------------------
+" Plugin 'powerline/powerline'
+" set rtp+=~/.vim/bundle/powerline/powerline/bindings/vim
+
+
+"----------------------------------------------------------
+" Tabline
+"----------------------------------------------------------
+set tabline=%!tabber#TabLine()
+
+"----------------------------------------------------------
+"   Tmuxline / Promptline
+"----------------------------------------------------------
+" let g:promptline_theme = 'airline'
+" let g:promptline_preset = 'powerlineclone'
+" let g:promptline_preset = 'full'
+" let g:airline_theme='powerlineish'
+" let g:airline_theme='luna'
+let g:airline_theme='powerlinec'
+let g:airline_powerline_fonts = 1
+
+let g:tmuxline_preset = 'powerline'
+let g:tmuxline_theme = 'airline'
+
+let g:promptline_theme = 'airline'
+let g:promptline_preset = {
+  \'a' : [ promptline#slices#host() ],
+  \'b' : [ '$USER'],
+  \'c' : [ promptline#slices#cwd() ],
+  \'y' : [ promptline#slices#vcs_branch() ],
+  \'warn' : [ promptline#slices#last_exit_code() ] }
+
+
+function! WriteAirlineSnapshotFunc()
+  let l:basePath = expand('$HOME/environment')
+  execute ':TmuxlineSnapshot! ' . l:basePath . '/tmuxline.sh'
+  execute ':PromptlineSnapshot! ' . l:basePath . '/promptline.sh'
+endfunction
+
+augroup WriteAirlineSnapshot
+  au!
+  autocmd VimLeave * call WriteAirlineSnapshotFunc()
+augroup end
+
+"----------------------------------------------------------
+" indent settings
+"----------------------------------------------------------
+set autoindent
+set softtabstop=2
+set tabstop=2
+set shiftwidth=2
+set expandtab
+set smartindent
+
+
+set foldmethod=marker
+
+"----------------------------------------------------------
+"   text encoding
+"----------------------------------------------------------
+set encoding=utf-8
+set fileencodings=ucs-bom,utf-8,iso-2022-jp-3,iso-2022-jp,eucjp-ms,euc-jisx0213,euc-jp,sjis,cp932
+set fileencoding=utf-8
+
+"----------------------------------------------------------
+"   search 
+"----------------------------------------------------------
+set ignorecase
+
+"----------------------------------------------------------
+"   view
+"----------------------------------------------------------
+set nowrap
+
+"----------------------------------------------------------
+"   gui (gvim)
+"----------------------------------------------------------
+
+"----------------------------------------------------------
+"   additional settings
+"----------------------------------------------------------
+set clipboard=unnamed,unnamedplus
+
+
+"----------------------------------------------------------
+"   completion and code reference
+"----------------------------------------------------------
+" iunmap <C-i>
+" imap <C-i> <C-x>
+let g:neocomplete#enable_at_startup = 1
+
+map  <F3> :GtagsCursor<CR>
+" map <C-i> :GtagsCursor<CR>
+map  <C-/> :Gtags -g
+" map <C-D> :Cmapkeys<CR>:Cfile a.out<CR>:Cstart<CR>
+
+map gj :wincmd j<CR>
+map gk :wincmd k<CR>
+map gh :wincmd h<CR>
+map gl :wincmd l<CR>
+
+map \i :ghc-mod 
+
+map <C-t>l :tabnext<CR>
+map <C-t>h :tabprevious<CR>
+map <C-t>n :tabnew<CR>
+map <C-t>c :tabclose<CR>
+
+" MiniBufExplorer
+" map <C-Tab> :MBEbn<CR>
+" map <C-S-Tab> :MBEbp<CR>
+map <C-j> :MBEbn<CR>
+map <C-k> :MBEbp<CR>
+
+"----------------------------------------------------------
+"   scrolling
+"----------------------------------------------------------
+" map <C-j> <C-f> 
+" map <C-k> <C-b>
+
+"----------------------------------------------------------
+"   remapping undo
+"----------------------------------------------------------
+" nmap U <C-r>
+
+"----------------------------------------------------------
+"   window commands
+"----------------------------------------------------------
+" map <C-H> :wincmd h<CR>
+" map <C-J> :wincmd j<CR>
+" map <C-K> :wincmd k<CR>
+" map <C-L> :wincmd l<CR>
+
+"----------------------------------------------------------
+"   colorscheme
+"----------------------------------------------------------
+colorscheme darkblue2
+
+"----------------------------------------------------------
+"   pathogen
+"----------------------------------------------------------
+
+" filetype off
+" call pathogen#runtime_append_all_bundles()
+" call pathogen#infect()
+filetype on
+
+"----------------------------------------------------------
+"   Filetype Mapping
+"----------------------------------------------------------
+au BufRead,BufNewFile *.fr set filetype=haskell
+au BufRead,BufNewFile *.gradle set filetype=groovy
+
+"----------------------------------------------------------
+"   quick-run
+"----------------------------------------------------------
+let g:quickrun_config = {}
+
+let g:quickrun_config['javascript']  = {
+  \ 'command' : 'node', 'exec'    : ['%c %s'],
+  \ 'buffer/split': 'vertical',
+  \ 'buffer/name' : '[quickrun/javascript]'
+\ }
+
+let g:quickrun_config['ls'] = {
+  \ 'command' : 'livescript',  'exec' : ['%c -cbp %s'],
+  \ 'tempfile': '%{tempname()}.js',
+  \ 'outputter': 'buffer',
+  \ 'buffer/filetype' : 'javascript',
+  \ 'buffer/name' : '[quickrun/livescript]'
+\ }
+
+let g:quickrun_config['coffee'] = {
+  \ 'command' : 'coffee', 'exec' : ['%c -cbp %s']
+\ }
+
+let g:quickrun_config['haskell'] = {
+  \ 'command' : 'ghc',   'exec' : ['%c %s -o %s.out', '%s.out']
+\ }
+
+"----------------------------------------------------------
+"   haskelmode
+"----------------------------------------------------------
+let g:haddock_browser = 0
+
+"----------------------------------------------------------
+"   coffee script
+"   livescript
+"----------------------------------------------------------
+" function! LiveScript(...)
+"   !livescript {join(a:000,' ')}
+" endfunction
+autocmd BufWritePost *.coffee silent CoffeeMake! -cb | cwindow | redraw!
+
+" livescript On Save 
+" autocmd BufWritePost *.ls     silent LiveScriptMake! -cb  | cwindow | redraw!
+
+
+
+"----------------------------------------------------------
+"   fcitx Switching
+"----------------------------------------------------------
+let g:fcitx_enabled = 0
+
+function! Fcitx_refresh_status()
+    let cmd_status  = 'fcitx-remote'
+    let g:fcitx_enabled=(system(cmd_status)-1)
+endfunction
+
+function! Fcitx_switch(do_enable)
+    let cmd_enable  = 'fcitx-remote -o'
+    let cmd_disable = 'fcitx-remote -c'
+
+    let cmd_current = cmd_disable
+
+    if a:do_enable
+        if g:fcitx_enabled
+            let cmd_current = cmd_enable
+        endif
+    else
+        call Fcitx_refresh_status()
+    endif
+
+    call system(cmd_current)
+endfunction
+
+autocmd VimEnter    * call Fcitx_switch(0)
+autocmd InsertLeave * call Fcitx_switch(0)
+autocmd InsertEnter * call Fcitx_switch(1)
+autocmd VimLeave    * call Fcitx_switch(1)
+
+
+autocmd InsertLeave * redraw!
+
+
+" remove delay on escape
+set timeout ttimeoutlen=50
+
+
+"----------------------------------------------------------
+"   set Layout
+"----------------------------------------------------------
+
+function! WinCmdSingle(str)
+    execute ("wincmd " . a:str )
+    return a:str
+endfunction
+
+function! WinCmdList(strw)
+    let i = 0
+    let listw=[]
+    while( i < len(a:strw) )
+        call add( listw, a:strw[i] )
+        let i = (i + 1)
+    endwhile
+    call map( listw, 'WinCmdSingle(v:val)' )
+    return 
+endfunction
+
+
+
+function! StartupLayoutWithConqueTerm(leftpane,bottompane)
+    stopinsert 
+
+    " Quicktask
+    call WinCmdList( 'ljK' )
+
+    " NERDTree
+    call WinCmdList( 'jjK' )
+
+    " MainBuffer
+    call WinCmdList( 'jjL' )
+
+    " ConqueTerm
+    call WinCmdList( 'hjjJ' )
+    execute ( 'resize ' . a:bottompane )
+    set winfixheight
+    startinsert
+    stopinsert 
+
+    " MiniBufExpl : this buffer is moved to top at initialization 
+
+    " move to leftpane
+    call WinCmdList( 'k' )
+    execute ( ' vertical resize ' . a:leftpane )
+    set winfixwidth
+
+    " move to main
+    call WinCmdList( 'l' )
+endfunction
+
+function! StartupLayout(leftpane)
+    stopinsert 
+
+    " Quicktask
+    call WinCmdList( 'lK' )
+
+    " NERDTree
+    call WinCmdList( 'jK' )
+
+    " MainBuffer
+    call WinCmdList( 'jjL' )
+
+    " MiniBufExpl : this buffer is moved to top at initialization 
+
+    " move to leftpane
+    call WinCmdList( 'h' )
+    execute ( ' vertical resize ' . a:leftpane )
+    set winfixwidth
+
+    " move to main
+    call WinCmdList( 'l' )
+endfunction
+
+" autocmd VimEnter * ConqueTermSplit bash
+" autocmd VimEnter * call QuicktaskStartUp()
+" autocmd VimEnter * NERDTree
+" autocmd VimEnter * stopinsert 
+" autocmd VimEnter * call StartupLayout(40)
+
+
+"----------------------------------------------------------
+"   check Buffers
+"----------------------------------------------------------
+
+let s:bufs_before=[ ]
+let s:bufs_others=[ ]
+
+function! CreateList(length)
+    let i = 0
+    let r = []
+    while ( i < a:length )
+        call add(r,i)
+        let i=(i+1)
+    endwhile
+    return (r)
+endfunction
+
+function! GetBufferList()
+    return filter(
+        \ CreateList(bufnr("$")+1),
+        \ 'bufexists(v:val)'
+    \ )
+endfunction
+
+function! GetExcludeList(src,sub)
+    return filter( copy(a:src), 'match(a:sub,v:val) == -1' )
+endfunction
+
+let s:bufs_before = GetBufferList()
+let s:bufs_registered = []
+ 
+function! CheckBuffers()
+    let B = ListMainBuffers()
+    let L = len ( B )
+    if( L == 0 || ( L == 1 && B[0] == bufnr("%") ) )
+        qall
+    endif
+    return
+endfunction
+
+function! ListMainBuffers()
+    let listed = filter( GetBufferList(), 'buflisted(v:val)' )
+    return ( GetExcludeList( listed, s:bufs_others ) )
+endfunction
+
+function! GetLastBuffer()
+    return ( s:bufs_registered[ len(s:bufs_registered) - 1 ] )
+endfunction
+
+function! RegisterSubBuffers()
+    let s:bufs_others = GetExcludeList( GetBufferList(), s:bufs_before )
+endfunction
+
+function! RegisterLatestBuffer()
+    call add (s:bufs_registered,  bufnr("%") )
+endfunction
+
+autocmd VimEnter  * call RegisterSubBuffers()
+autocmd BufRead,BufNewFile   * call RegisterLatestBuffer()
+autocmd BufUnload * call CheckBuffers()
+
+"----------------------------------------------------------
+"   for QuickTask
+"----------------------------------------------------------
+
+let s:quicktask_filename = 'vim.quicktask'
+let g:quicktask_autosave = 1
+
+function! QuicktaskOpen(file)
+    if filereadable( a:file )
+        silent execute( 'new +set\ filetype=quicktask ' . a:file )
+        return 1
+    endif
+    return 0
+endfunction
+
+
+function QuicktaskStartUp()
+    if( QuicktaskOpen( './' . s:quicktask_filename ) == 0 )
+        call QuicktaskOpen( $HOME . '/.' . s:quicktask_filename )
+    endif
+endfunction
+
+
+
+
+

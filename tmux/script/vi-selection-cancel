@@ -1,0 +1,3 @@
+# selection -> copy -> normal
+bind-key -t vi-copy T cancel
+source-file "$HOME/.tmux/script/vi-copy-end"

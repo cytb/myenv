@@ -1,0 +1,7 @@
+# unbind keys 
+unbind-key -n y
+unbind-key -n v
+unbind-key -n V
+unbind-key -n Enter
+unbind-key -n q
+
