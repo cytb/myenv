@@ -10,10 +10,10 @@ call vundle#begin()
 
 Plugin 'gmarik/Vundle.vim'
 Plugin 'scrooloose/nerdtree'
-" Plugin 'vim-scripts/minibufexplorerpp'
+Plugin 'vim-scripts/minibufexplorerpp'
 Plugin 'vim-scripts/omlet.vim'
-" Plugin 'Shougo/neocomplete.vim'
-" Plugin 'Shougo/vimproc.vim'
+Plugin 'Shougo/neocomplete.vim'
+Plugin 'Shougo/vimproc.vim'
 Plugin 'lukerandall/haskellmode-vim'
 Plugin 'eagletmt/ghcmod-vim'
 Plugin 'thinca/vim-quickrun'
@@ -129,6 +129,7 @@ set clipboard=unnamed,unnamedplus
 "----------------------------------------------------------
 " iunmap <C-i>
 " imap <C-i> <C-x>
+let g:neocomplete#skip_auto_completion_time = "0.3"
 let g:neocomplete#enable_at_startup = 1
 
 map  <F3> :GtagsCursor<CR>

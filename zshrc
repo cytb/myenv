@@ -90,6 +90,7 @@ export_path append_path_pre  $HOME/{.local/opt/pd,.local,.cabal,.npm,.local/opt/
 export_path append_path_post $HOME/.xmonad {/usr/local,/usr,"",/opt,/usr/games}/bin
 export_path append_path_post /opt/android-sdk/platform-tools/
 export_path append_path_post $HOME/.gem/ruby/2.1.0/bin
+export_path append_path_post $HOME/.local/opt/android-ndk/
 
 
 # Promptline
