@@ -73,19 +73,11 @@ export_path(){
 }
 
 append_path_pre(){
-    while [ -n "$1" ]
-    do
-      export PATH=$1:${PATH}
-      shift
-    done
+    export PATH=$1:${PATH}
 }
 
 append_path_post(){
-    while [ -n "$1" ]
-    do
-      export PATH=${PATH}:$1
-      shift
-    done
+    export PATH=${PATH}:$1
 }
 
 export EDITOR=vim
