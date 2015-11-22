@@ -80,18 +80,48 @@ append_path_post(){
     export PATH=${PATH}:$1
 }
 
+export_list(){
+  if [ -n "$1" ]
+  then
+    while read target_path
+    do
+      export_path $1 "$target_path"
+    done
+  fi
+}
+
 export EDITOR=vim
 
 # PROMPT='%{$fg_bold[red]%}➜ %{$fg_bold[green]%} %n %{$fg[cyan]%} %~ %{$fg_bold[blue]%}$(git_prompt_info)%{$fg_bold[blue]%} % %{$reset_color%}'
 # Customize to your needs...
 
-export_path append_path_pre  $HOME/node_modules/.bin /usr/x86_64-pc-linux-gnu/gcc-bin/4.7.3 
-export_path append_path_pre  $HOME/{.local/opt/pd,.local,.cabal,.npm,.local/opt/netbeans-dev}/bin
-export_path append_path_post $HOME/.xmonad {/usr/local,/usr,"",/opt,/usr/games}/bin
-export_path append_path_post /opt/android-sdk/platform-tools/
-export_path append_path_post $HOME/.gem/ruby/2.1.0/bin
-export_path append_path_post $HOME/.local/opt/android-ndk/
+export GOPATH=$HOME/go-pkg
 
+export_list append_path_pre << end_path_list
+/usr/x86_64-pc-linux-gnu/gcc-bin/4.7.3
+$HOME/node_modules/.bin
+$HOME/.local/opt/pd/bin
+$HOME/.local/bin
+$HOME/.cabal/bin
+$HOME/.npm/bin
+$HOME/.local/opt/netbeans-dev/bin
+end_path_list
+
+export_list append_path_post << end_path_list
+$HOME/.xmonad
+$HOME/.gem/ruby/1.9.1/bin
+$HOME/.gem/ruby/2.1.0/bin
+$HOME/.gem/ruby/2.2.0/bin
+/usr/local/bin
+/usr/bin
+/bin
+/opt/bin
+/usr/games/bin
+/opt/android-sdk/platform-tools/
+$GOPATH/bin
+$HOME/.gem/ruby/2.1.0/bin
+$HOME/.local/opt/android-ndk/
+end_path_list
 
 # Promptline
 PROMPTLINE_ZSH="$HOME/environment/promptline.sh"
@@ -125,4 +155,4 @@ export GVM_INIT=false
 [[ -s "$HOME/.gvm/bin/gvm-init.sh" ]] && source "$HOME/.gvm/bin/gvm-init.sh"
 
 
-export GOPATH=$HOME/go-pkg
+export PATH="$PATH:$HOME/.rvm/bin" # Add RVM to PATH for scripting

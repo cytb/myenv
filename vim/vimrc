@@ -12,6 +12,7 @@ Plugin 'gmarik/Vundle.vim'
 Plugin 'scrooloose/nerdtree'
 Plugin 'vim-scripts/minibufexplorerpp'
 Plugin 'vim-scripts/omlet.vim'
+Plugin 'Rip-Rip/clang_complete'
 Plugin 'Shougo/neocomplete.vim'
 Plugin 'Shougo/vimproc.vim'
 Plugin 'lukerandall/haskellmode-vim'
@@ -21,8 +22,12 @@ Plugin 'edkolev/promptline.vim'
 Plugin 'edkolev/tmuxline.vim'
 Plugin 'bling/vim-airline'
 Plugin 'bling/vim-bufferline'
+Plugin 'gkz/vim-ls'
 Plugin 'fweep/vim-tabber'
 Plugin 'cytb/vimairline-powerlineish-modified'
+Plugin 'mpickering/hlint-refactor-vim'
+" Plugin 'xaizek/vim-inccomplete'
+
 
 call vundle#end()
 filetype plugin indent on
@@ -131,6 +136,8 @@ set clipboard=unnamed,unnamedplus
 " imap <C-i> <C-x>
 let g:neocomplete#skip_auto_completion_time = "0.3"
 let g:neocomplete#enable_at_startup = 1
+" disable include path completion
+call neocomplete#custom#source('include','disabled_filetypes', {'cpp' : 1})
 
 map  <F3> :GtagsCursor<CR>
 " map <C-i> :GtagsCursor<CR>
@@ -212,6 +219,19 @@ let g:quickrun_config['ls'] = {
   \ 'buffer/filetype' : 'javascript',
   \ 'buffer/name' : '[quickrun/livescript]'
 \ }
+
+let g:quickrun_config['cpp'] = {
+  \ 'command' : 'clang++',  'exec' : ['%c %s -std=c++11 -lc++ -o %s.out',  '%s.out' ]
+\ }
+
+let g:quickrun_config['cpp/g++'] = {
+  \ 'command' : 'clang++',  'exec' : ['%c %s -std=c++11 -lc++ -o %s.out',  '%s.out' ]
+\ }
+
+let g:quickrun_config['cpp/clang++'] = {
+  \ 'command' : 'clang++',  'exec' : ['%c %s -std=c++11 -lc++ -o %s.out',  '%s.out' ]
+\ }
+
 
 let g:quickrun_config['coffee'] = {
   \ 'command' : 'coffee', 'exec' : ['%c -cbp %s']
