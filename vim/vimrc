@@ -26,7 +26,9 @@ Plugin 'gkz/vim-ls'
 Plugin 'fweep/vim-tabber'
 Plugin 'cytb/vimairline-powerlineish-modified'
 Plugin 'mpickering/hlint-refactor-vim'
+" Plugin 'cytb/hlint-refactor-vim'
 " Plugin 'xaizek/vim-inccomplete'
+Plugin 'Igorjan94/codeforces.vim'
 
 
 call vundle#end()
@@ -122,12 +124,13 @@ set nowrap
 "----------------------------------------------------------
 "   gui (gvim)
 "----------------------------------------------------------
+set guifont=MeiryoKe_Gothic\ 12
 
 "----------------------------------------------------------
 "   additional settings
 "----------------------------------------------------------
 set clipboard=unnamed,unnamedplus
-
+set splitright
 
 "----------------------------------------------------------
 "   completion and code reference
@@ -149,7 +152,13 @@ map gk :wincmd k<CR>
 map gh :wincmd h<CR>
 map gl :wincmd l<CR>
 
-map \i :ghc-mod 
+map \i :ghc-mod<CR>
+
+" replace default mapped keys for haskell hlint refactor 
+let g:hlintRefactor#disableDefaultKeybindings = 1
+map \hh :call ApplyOneSuggestion()<CR>
+map \ha :call ApplyAllSuggestions()<CR>
+
 
 map <C-t>l :tabnext<CR>
 map <C-t>h :tabprevious<CR>
@@ -221,7 +230,7 @@ let g:quickrun_config['ls'] = {
 \ }
 
 let g:quickrun_config['cpp'] = {
-  \ 'command' : 'clang++',  'exec' : ['%c %s -std=c++11 -lc++ -o %s.out',  '%s.out' ]
+  \ 'command' : 'g++',  'exec' : ['%c %s -std=c++11 -lstdc++ -o %s.out',  '%s.out' ]
 \ }
 
 let g:quickrun_config['cpp/g++'] = {
@@ -240,6 +249,15 @@ let g:quickrun_config['coffee'] = {
 let g:quickrun_config['haskell'] = {
   \ 'command' : 'ghc',   'exec' : ['%c %s -o %s.out', '%s.out']
 \ }
+
+let g:quickrun_config['haskell/ghc'] = {
+  \ 'command' : 'ghc',   'exec' : ['%c %s -o %s.out', '%s.out']
+\ }
+
+let g:quickrun_config['haskell/hastec'] = {
+  \ 'command' : 'hastec',   'exec' : ['%c %s -o %s.out', '%s.out']
+\ }
+
 
 "----------------------------------------------------------
 "   haskelmode
