@@ -43,7 +43,6 @@ COMPLETION_WAITING_DOTS="true"
 plugins=(git)
 
 source $ZSH/oh-my-zsh.sh
-
  
 zsh_p_ssh=""
 if [ -n "${SSH_CONNECTION}" ]; then
@@ -132,14 +131,32 @@ fi
 # OPAM configuration
 . $HOME/.opam/opam-init/init.zsh > /dev/null 2> /dev/null || true
 
-stty stop undef
+# for tmux pwd
+set_tmux_pwd(){
+  if [ -n "$TMUX" ]
+  then
+    tmux setenv $(tmux display -p "TMUXPWD_#I_#P") "$PWD"
+  fi
+}
+autoload -Uz add-zsh-hook
+add-zsh-hook chpwd set_tmux_pwd
+set_tmux_pwd
 
 pacman-search(){
     pacman -Ss "^($(pacman -Ssq $1 | grep git | tr "\\n" "|"  | sed 's/|$//' ))\$"
 }
 
+alias opengrok="sudo -E -u opengrok OpenGrok"
+
+enable_chromium_tools(){
+  append_path_pre "$HOME/.local/opt/chromium/depot_tools"
+  append_path_pre "$HOME/.local/opt/chromium/nacl_sdk/pepper_44/tools/"
+}
+
 # nvm
+# enable_nvm(){
 source $HOME/.nvm/nvm.sh
+# }
 
 ###-begin-npm-completion-###
 #
@@ -147,12 +164,14 @@ source $HOME/.nvm/nvm.sh
 #
 # Installation: npm completion >> ~/.bashrc  (or ~/.zshrc)
 # Or, maybe: npm completion > /usr/local/etc/bash_completion.d/npm
-#
 
-
-export GVM_INIT=false
-#THIS MUST BE AT THE END OF THE FILE FOR GVM TO WORK!!!
-[[ -s "$HOME/.gvm/bin/gvm-init.sh" ]] && source "$HOME/.gvm/bin/gvm-init.sh"
 
 
 export PATH="$PATH:$HOME/.rvm/bin" # Add RVM to PATH for scripting
+
+export GVM_INIT=false
+#THIS MUST BE AT THE END OF THE FILE FOR GVM TO WORK!!!
+enable_gvm(){
+  [[ -s "$HOME/.gvm/bin/gvm-init.sh" ]] && source "$HOME/.gvm/bin/gvm-init.sh"
+}
+

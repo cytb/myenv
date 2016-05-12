@@ -11,10 +11,14 @@ call vundle#begin()
 Plugin 'gmarik/Vundle.vim'
 Plugin 'thinca/vim-quickrun'
 Plugin 'fweep/vim-tabber'
+Plugin 'xolox/vim-misc'
+Plugin 'xolox/vim-session'
 
 " ui
 Plugin 'scrooloose/nerdtree'
 Plugin 'vim-scripts/minibufexplorerpp'
+" Plugin 'ap/vim-buftabline'
+" Plugin 'vim-scripts/BufLine'
 
 " highlight
 Plugin 'nathanaelkane/vim-indent-guides'
@@ -28,34 +32,41 @@ Plugin 'cytb/vimairline-powerlineish-modified'
 
 " completion
 " Plugin 'Shougo/neocomplete.vim'
-Plugin 'Shougo/vimproc.vim'
+" Plugin 'Shougo/vimproc.vim'
 Plugin 'Valloric/YouCompleteMe'
 
 " ocaml
-Plugin 'vim-scripts/omlet.vim'
+" Plugin 'vim-scripts/omlet.vim'
 
 " c/c++
-Plugin 'Rip-Rip/clang_complete'
+" Plugin 'Rip-Rip/clang_complete'
 
 " ls
 Plugin 'gkz/vim-ls'
 
 " haskell
-Plugin 'eagletmt/neco-ghc'
-Plugin 'mkasa/neco-ghc-lushtags'
+" Plugin 'eagletmt/neco-ghc'
+" Plugin 'mkasa/neco-ghc-lushtags'
 " Plugin 'lukerandall/haskellmode-vim'
-Plugin 'eagletmt/ghcmod-vim'
-Plugin 'dag/vim2hs'
-Plugin 'pbrisbin/vim-syntax-shakespeare'
-Plugin 'mpickering/hlint-refactor-vim'
+" Plugin 'eagletmt/ghcmod-vim'
+" Plugin 'dag/vim2hs'
+" Plugin 'pbrisbin/vim-syntax-shakespeare'
+" Plugin 'mpickering/hlint-refactor-vim'
 
 " Plugin 'cytb/hlint-refactor-vim'
 " Plugin 'xaizek/vim-inccomplete'
-Plugin 'Igorjan94/codeforces.vim'
+" Plugin 'Igorjan94/codeforces.vim'
 
 
 call vundle#end()
 filetype plugin indent on
+
+"----------------------------------------------------------
+"   sessions
+"----------------------------------------------------------
+let g:session_autosave = 'yes'
+let g:session_autoload = 'yes'
+let g:session_directory = expand('$HOME/.vim-sessions/')
 
 "----------------------------------------------------------
 "   lightline
@@ -79,6 +90,13 @@ let g:lightline = {
 " Tabline
 "----------------------------------------------------------
 set tabline=%!tabber#TabLine()
+
+let g:bufferline_echo = 1
+let g:bufferline_echo = 0
+autocmd VimEnter *
+  \ let &statusline='%{bufferline#refresh_status()}'
+    \ .bufferline#get_status_string()
+let g:airline#extensions#bufferline#enabled = 1
 
 "----------------------------------------------------------
 "   Tmuxline / Promptline
@@ -123,6 +141,7 @@ set tabstop=2
 set shiftwidth=2
 set expandtab
 set smartindent
+set smartindent
 
 set foldmethod=marker
 
@@ -157,6 +176,7 @@ set nowrap
 "   gui (gvim)
 "----------------------------------------------------------
 set guifont=MeiryoKe_Gothic\ 12
+set guioptions=aegit
 
 "----------------------------------------------------------
 "   additional settings
@@ -174,16 +194,21 @@ set splitright
 " disable include path completion
 " call neocomplete#custom#source('include','disabled_filetypes', {'cpp' : 1})
 
+let g:ycm_global_ycm_extra_conf = expand('$HOME/.vim/.ycm_extra_conf.py')
+let g:ycm_seed_identifiers_with_syntax = 1
+let g:ycm_confirm_extra_conf = 0
+let g:ycm_autoclose_preview_window_after_insertion = 0
+let g:ycm_collect_identifiers_from_tag_files = 1
 
+autocmd! User YouCompleteMe if !has('vim_starting') | call youcompleteme#Enable() | endif
+
+set completeopt=longest,menu
+
+map  <C-]> :YcmCompleter GoToImprecise<CR>
 map  <F3> :GtagsCursor<CR>
 " map <C-i> :GtagsCursor<CR>
 map  <C-/> :Gtags -g
 " map <C-D> :Cmapkeys<CR>:Cfile a.out<CR>:Cstart<CR>
-
-map gj :wincmd j<CR>
-map gk :wincmd k<CR>
-map gh :wincmd h<CR>
-map gl :wincmd l<CR>
 
 map \i :ghc-mod<CR>
 
@@ -195,6 +220,14 @@ map \ha :call ApplyAllSuggestions()<CR>
 augroup ghcmodcheck
   autocmd! BufWritePost <buffer> if exists(":GhcModCheckAsync") | exec ":GhcModCheckAsync" | endif
 augroup END
+
+"----------------------------------------------------------
+"   Window commands
+"----------------------------------------------------------
+map gj :wincmd j<CR>
+map gk :wincmd k<CR>
+map gh :wincmd h<CR>
+map gl :wincmd l<CR>
 
 map <C-t>l :tabnext<CR>
 map <C-t>h :tabprevious<CR>
@@ -219,14 +252,6 @@ map <C-k> :MBEbp<CR>
 " nmap U <C-r>
 
 "----------------------------------------------------------
-"   window commands
-"----------------------------------------------------------
-" map <C-H> :wincmd h<CR>
-" map <C-J> :wincmd j<CR>
-" map <C-K> :wincmd k<CR>
-" map <C-L> :wincmd l<CR>
-
-"----------------------------------------------------------
 "   colorscheme
 "----------------------------------------------------------
 colorscheme darkblue2
@@ -248,7 +273,14 @@ au BufRead,BufNewFile *.gradle set filetype=groovy
 
 
 "----------------------------------------------------------
-" haskell
+"   Additional Syntax
+"----------------------------------------------------------
+syn include @htmlLiveScript $HOME/.vim/bundle/vim-ls/syntax/ls.vim
+syn region htmlLsCustom start=+<script.*type=\(["']\)text\/ls\1.*>+
+\ keepend end=+<\/script>+ contains=@htmlLiveScript
+
+"----------------------------------------------------------
+"   Haskell
 "----------------------------------------------------------
 let g:necoghc_enable_detailed_browse = 1
 let g:haskellmode_completion_ghc = 0
@@ -256,7 +288,10 @@ autocmd FileType haskell setlocal omnifunc=necoghc#omnifunc
 " let g:haskellmode_completion_ghc = 0
 " autocmd FileType haskell :NeoCompleteAutoCompletionLength 1
 " let g:neocomplete#sources#syntax#min_keyword_length = 0
-let g:ycm_semantic_triggers = {'haskell' : ['.',' ','(']}
+let g:ycm_semantic_triggers = {
+  \ 'haskell' : ['.',' ','('],
+  \ 'cpp'     : ['.','(','{','->','::']
+\ }
 
 "----------------------------------------------------------
 "   quick-run
@@ -270,12 +305,18 @@ let g:quickrun_config['javascript']  = {
 \ }
 
 let g:quickrun_config['ls'] = {
-  \ 'command' : 'livescript',  'exec' : ['%c -cbp %s'],
-  \ 'tempfile': '%{tempname()}.js',
+  \ 'command' : 'lsc',  'exec' : ['%c %s'],
   \ 'outputter': 'buffer',
-  \ 'buffer/filetype' : 'javascript',
   \ 'buffer/name' : '[quickrun/livescript]'
 \ }
+
+" let g:quickrun_config['ls'] = {
+"   \ 'command' : 'lsc',  'exec' : ['%c -cbp %s'],
+"   \ 'tempfile': '%{tempname()}.js',
+"   \ 'outputter': 'buffer',
+"   \ 'buffer/filetype' : 'javascript',
+"   \ 'buffer/name' : '[quickrun/livescript]'
+" \ }
 
 let g:quickrun_config['cpp'] = {
   \ 'command' : 'g++',  'exec' : ['%c %s -std=c++11 -lstdc++ -o %s.out',  '%s.out' ]
