@@ -1,1 +1,0 @@
-{'DEBUG', 'true', 'source', 'watcher.sh', 'execute_stack', 'FLAG', 'then', '--flag', 'hs-othello', 'FastCompile', 'BuildCommand', 'stack', 'build', 'exec', 'hothello', 'else', 'echo', 'Skipped', 'Execution', 'watch', 'find', '-iname', 'hs-othello.cabal', 'stack.yaml', 'README.md'}

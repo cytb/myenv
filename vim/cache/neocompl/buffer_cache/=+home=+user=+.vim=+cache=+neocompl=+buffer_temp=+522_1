@@ -1,1 +1,0 @@
-{'import', 'System.Environment', 'getArgs', 'qualified', 'Data.Text.IO', 'Data.Text', 'Data.List', 'mapAccumL', 'search1', 'T.isInfixOf', 'search2', 'T.count', 'search3', 'word', 'content', 'length', 'where', 'concat', 'zipWith', 'indices', 'T.lines', 'T.length', 'scanl1', 'subLength', 'init', 'T.splitOn', 'main', 'file', 'print', 'T.pack', 'T.readFile'}

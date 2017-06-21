@@ -1,1 +1,0 @@
-{'import', 'System.Environment', 'getArgs', 'Data.List', 'isInfixOf', 'isPrefixOf', 'tails', 'findIndices', 'qualified', 'Data.Text', 'Data.Text.IO', 'earch1', 'search2', 'word', 'length', 'filter', 'search3', 'content', 'where', 'concat', 'zipWith', 'indices', 'lines', 'repeat', 'main', 'file', 'print', 'search1', 'readFile'}

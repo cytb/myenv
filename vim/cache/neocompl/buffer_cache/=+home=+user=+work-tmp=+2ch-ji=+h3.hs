@@ -1,1 +1,0 @@
-{'import', 'System.Environment', 'getArgs', 'Data.List', 'isInfixOf', 'isPrefixOf', 'search1', 'search2', 'word', 'content', 'where', 'toEnum', 'search3', 'length', 'reverse', 'then', 'else', 'main', 'file', 'print', 'readFile'}

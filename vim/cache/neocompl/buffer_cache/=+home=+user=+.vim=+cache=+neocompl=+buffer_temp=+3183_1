@@ -1,1 +1,0 @@
-{'Sequential', 'Read', 'read', 'directory', 'size', 'ioengine', 'libaio', 'sync', 'Write', 'write', 'Random', 'randread', 'randwrite'}

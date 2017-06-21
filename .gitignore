@@ -1,9 +1,11 @@
 /vim/bundle
 /vim/sessions
 /vim/.*
+/vim/cache
 !/vim/.vimrc
 /neovim/bundle
 /neovim/sessions
 /neovim/.*
+/neovim/cache
 !/neovim/.vimrc
 

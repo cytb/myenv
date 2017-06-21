@@ -1,7 +1,0 @@
-# selection -> copy -> normal
-bind-key -T copy-mode-vi T send-keys -X copy-selection
-source-file "$HOME/.tmux/script/vi-copy-end"
-run-shell "tmux save-buffer - | xsel -i -b"
-run-shell "tmux save-buffer - | xsel -i -b"
-
-

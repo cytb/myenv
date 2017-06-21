@@ -1,1 +1,0 @@
-{'source', 'watcher.sh', 'stack', 'build', 'then', 'exec', 'binary', 'else', 'echo', 'Skipped', 'Execution', 'watch', 'hothello', 'hs-othello.cabal', 'stack.yaml', 'README.md'}

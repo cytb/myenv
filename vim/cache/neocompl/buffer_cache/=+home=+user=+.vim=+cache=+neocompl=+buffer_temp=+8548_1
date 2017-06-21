@@ -1,1 +1,0 @@
-{'import', 'java', 'File', 'main', 'args', 'Array', 'String', 'content', 'readText', 'word', 'println', 'search1', 'search2', 'search3', 'Boolean', 'return', 'indexOf', 'while', 'data', 'class', 'Search3Result', 'found', 'count', 'indices', 'List', 'Pair', 'mutableListOf', 'line', 'lines', 'size'}

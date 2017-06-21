@@ -1,7 +1,0 @@
-
-import Test.QuickCheck.Gen(generate,shuffle)
-import Data.List(sortOn)
-
-main = do
-  rlist <- shuffle [1..1000]
-  print rlist

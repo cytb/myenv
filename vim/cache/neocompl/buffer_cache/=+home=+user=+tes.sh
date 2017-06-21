@@ -1,1 +1,0 @@
-{'MachineName', 'false', 'then', 'VBoxManage', 'modifyvm', '--cpuidset', 'ffafbff', 'bfebfbff', 'setextradata', 'VBoxInternal', 'Devices', 'Config', 'DmiSystemProduct', 'MacBookAir6', 'DmiSystemVersion', 'DmiBoardProduct', 'Iloveapple', 'DeviceKey', 'ourhardworkbythesewordsguardedpleasedontsteal', 'AppleComputerInc', 'GetKeyFromRealSMC', 'elif', '--cpuidremoveall', 'else'}

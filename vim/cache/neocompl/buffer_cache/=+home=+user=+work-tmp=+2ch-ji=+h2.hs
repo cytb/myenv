@@ -1,1 +1,0 @@
-{'import', 'System.Environment', 'getArgs', 'qualified', 'Data.Text', 'Data.List', 'isInfixOf', 'isPrefixOf', 'search1', 'search2', 'word', 'content', 'T.count', 'T.pack', 'search3', 'where', 'length', 'then', 'else', 'main', 'file', 'print', 'readFile'}

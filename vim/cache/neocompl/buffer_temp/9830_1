@@ -1,6 +1,0 @@
-#!/bin/zsh
-
-source ./watcher.sh
-watch hothello **/*.hs hs-othello.cabal stack.yaml README.md
-
-:
