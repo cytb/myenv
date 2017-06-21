@@ -1,0 +1,1 @@
+{'package', 'main', 'import', 'ioutil', 'strings', 'func', 'file', 'Args', 'word', 'buffer', 'ReadFile', 'content', 'string', 'Println', 'search1', 'search2', 'search3', 'bool', 'return', 'indexOf', 'Count', 'type', 'struct', 'Search3Result', 'indices', 'line', 'range', 'Split', 'Index', 'break', 'append'}

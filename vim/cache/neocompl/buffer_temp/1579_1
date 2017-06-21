@@ -1,0 +1,53 @@
+#!/bin/zsh
+
+# DEV_NAME="UC-Logic TABLET 1060N"
+DEV_NAME="UC-Logic TABLET 1060N Pen"
+TABLET_WIDTH=10.0
+TABLET_HEIGHT=6.0
+ALIGN_TO=right
+FIT_TO=height
+
+get_screen_size(){
+  xrandr | grep '*' | egrep '[0-9]+x[0-9]+' -o
+}
+
+str_includes(){
+  if [ "$(echo "$1" | grep "$2" -o )" = "$2" ]; then
+    return 0
+  fi
+  return 1
+}
+
+set -x 
+DISPLAY_WIDTH=$(get_screen_size | cut -f1 -dx).0
+DISPLAY_HEIGHT=$(get_screen_size | cut -f2 -dx).0
+
+if [ "$FIT_TO" = "height" ]; then
+  let TARGET_HEIGHT=1.0
+  let HEIGHT_RATIO=DISPLAY_HEIGHT/TABLET_HEIGHT
+  let TARGET_WIDTH=HEIGHT_RATIO\*TABLET_WIDTH/DISPLAY_WIDTH
+else
+  let TARGET_WIDTH=1.0
+  let WIDTH_RATIO=DISPLAY_WIDTH/TABLET_WIDTH
+  let TARGET_HEIGHT=WIDTH_RATIO\*TABLET_HEIGHT/DISPLAY_HEIGHT
+fi
+
+let TARGET_X=0.0
+p
+let TARGET_Y=0.0
+if (str_includes "$ALIGN_TO" "right"); then
+  let TARGET_X=1.0-TARGET_WIDTH
+fi
+if (str_includes "$ALIGN_TO" "bottom"); then
+  let TARGET_Y=1.0-TARGET_HEIGHT
+fi
+
+echo $TARGET_X
+echo $TARGET_Y
+echo $TARGET_WIDTH
+echo $TARGET_HEIGHT
+
+DEV_ID="$(xinput list | grep -i "$DEV_NAME" | cut -f2 | head -n1 | cut -d'=' -f2)"
+xinput set-prop $DEV_ID --type=float "Coordinate Transformation Matrix" \
+    "$TARGET_WIDTH" 0 "$TARGET_X" 0 "$TARGET_HEIGHT" "$TARGET_Y" 0 0 1
+

@@ -1,0 +1,34 @@
+import java.io.File
+
+fun main(args : Array<String>) {
+  val content = File(args[0]).readText()
+  val word    = args[1]
+
+  println( search1(word,content) )
+  println( search2(word,content) )
+  println( search3(word,content) )
+}
+
+fun search1(word: String, content: String){
+  content.indexOf(word) != (-1)
+}
+
+fun search2(word: String, content: String){
+  var i = 0
+  var n = 0
+  while( { i = content.indexOf(word,i); i++ != -1}() ) n++
+  en
+}
+
+
+data class Search3Result(val found: Boolean, val count: Int, val indices: List<Int>)
+fun search3(word: String, content: String){
+  val indices = mutableListOf<Int>()
+  var i = 0
+  
+  while( { i = content.indexOf(word,i); i }() != -1 )
+  	indices.add(i++)
+
+  Search3Result(indices.size > 0, indices.size, indices)
+}
+

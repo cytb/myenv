@@ -1,0 +1,25 @@
+
+Mode="${1}"
+MachineName="Mac OSX"
+
+if [ "$Mode" == "enable" ];
+then
+  VBoxManage modifyvm "$MachineName" --cpuidset 00000001 00040651 03100800 7ffafbff bfebfbff                          
+  VBoxManage setextradata "$MachineName" "VBoxInternal/Devices/efi/0/Config/DmiSystemProduct" "MacBookAir6,1"
+  VBoxManage setextradata "$MachineName" "VBoxInternal/Devices/efi/0/Config/DmiSystemVersion" "1.0"
+  VBoxManage setextradata "$MachineName" "VBoxInternal/Devices/efi/0/Config/DmiBoardProduct" "Iloveapple"
+  VBoxManage setextradata "$MachineName" "VBoxInternal/Devices/smc/0/Config/DeviceKey" "ourhardworkbythesewordsguardedpleasedontsteal(c)AppleComputerInc"
+  VBoxManage setextradata "$MachineName" "VBoxInternal/Devices/smc/0/Config/GetKeyFromRealSMC" 1
+elif [ "$Mode" == "disable" ];
+then
+  VBoxManage modifyvm "$MachineName" --cpuidremoveall
+  VBoxManage setextradata "$MachineName" "VBoxInternal/Devices/efi/0/Config/DmiSystemProduct"
+  VBoxManage setextradata "$MachineName" "VBoxInternal/Devices/efi/0/Config/DmiSystemVersion"
+  VBoxManage setextradata "$MachineName" "VBoxInternal/Devices/efi/0/Config/DmiBoardProduct"
+  VBoxManage setextradata "$MachineName" "VBoxInternal/Devices/smc/0/Config/DeviceKey"
+  VBoxManage setextradata "$MachineName" "VBoxInternal/Devices/smc/0/Config/GetKeyFromRealSMC"
+else
+  echo "usage:"
+  echo " $(basename $0) <enable | disable>"
+fi
+

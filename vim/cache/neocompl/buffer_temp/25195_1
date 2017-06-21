@@ -1,0 +1,281 @@
+{-# LANGUAGE PackageImports #-}
+
+import qualified "GLFW" Graphics.UI.GLFW as GLFW
+-- import qualified "GLFW-b" Graphics.UI.GLFW as GLFWb
+import Graphics.Rendering.OpenGL as GL
+import Graphics.Rendering.FTGL as FTGL
+import Graphics.GL as RawGL
+import Foreign.C as C
+import Foreign.Marshal.Alloc(alloca)
+import Data.IORef
+import Control.Monad
+
+main = do
+  GLFW.initialize
+
+  -- open window
+  let (xres,yres) = (600,400)
+      ttfPath     = "MTLmr3m.ttf"
+  GLFW.openWindow (GL.Size xres yres) [GLFW.DisplayAlphaBits 8] GLFW.Window
+  GLFW.windowTitle $= "GLFW Demo"
+  -- GLFW.makeContextCurrent $ Just win
+
+  let fontSize = 16 * fromIntegral xres / 320
+
+  {--
+  GL.shadeModel    $= GL.Smooth
+  atlas        <- TextureAtlas.new 512 512 TextureAtlas.LCD_FILTERING_OFF
+  lcdAtlas     <- TextureAtlas.new 512 512 TextureAtlas.LCD_FILTERING_ON
+  normFont   <- TextureFont.newFromFile atlas fontSize TextureFont.RenderNormal ttfPath
+  dfFont     <- TextureFont.newFromFile atlas fontSize TextureFont.RenderSignedDistanceField ttfPath
+  lcdFont    <- TextureFont.newFromFile lcdAtlas fontSize TextureFont.RenderNormal ttfPath
+
+  -- GLFW.swapInterval 1
+  initFreetypeGL
+  --}
+
+  -- enable antialiasing
+  GL.lineSmooth  $= GL.Enabled
+  GL.blend       $= GL.Enabled
+  GL.blendFunc   $= (GL.SrcAlpha, GL.OneMinusSrcAlpha)
+  GL.clearColor  $= GL.Color4 0 0 0 0
+  GL.multisample $= GL.Enabled
+
+  [rb1,rb2] <- GL.genObjectNames 2 :: IO [GL.RenderbufferObject]
+  [fb]      <- GL.genObjectNames 1 :: IO [GL.FramebufferObject] 
+
+  GL.bindRenderbuffer GL.RenderBuffer $= rb1
+  GL.renderbufferStorageMultiSample RenderBuffer 4 GL.RGBA 256 256
+  GL.bindRenderbuffer GL.RenderBuffer $= rb2
+  GL.renderbufferStorageMultiSample RenderBuffer 4 GL.Depth32fStencil8 256 256
+
+  GL.bindFramebuffer GL.Framebuffer $= fb
+  GL
+
+  GLFW.windowSizeCallback $= \ size@(GL.Size w h) -> do
+    GL.viewport   $= (GL.Position 0 0, size)
+    GL.matrixMode $= GL.Projection
+    GL.loadIdentity
+    -- GL.perspective 30 1 1 100
+    -- GL.lookAt (GL.Vertex3 3.0 4.0 5.0) (GL.Vertex3 0.0 0.0 0.0) (GL.Vector3 0.0 1.0 0.0)
+    GL.frustum (-300) 300 (-300) (300) (10) (100)
+
+    GL.matrixMode $= GL.Modelview 0
+    GL.viewport   $= (GL.Position 0 0, size)
+    GL.loadIdentity
+
+  let setupLight = do
+        GL.position (Light 0) $= GL.Vertex4 0 0 0 1.0
+        GL.position (Light 1) $= GL.Vertex4 0 0 0 1.0
+        -- GL.position (Light 0) $= GL.Vertex4 0.0 0.0 0.0 1.0
+        -- GL.position (Light 1) $= GL.Vertex4 0.0 0.0 0.0 1.0
+        GL.diffuse  (Light 1) $= GL.Color4  1.0 1.0 1.0 1.0
+        GL.specular (Light 1) $= GL.Color4  1.0 1.0 1.0 1.0
+
+  -- disable auto polling in swapBuffers
+  GLFW.disableSpecial GLFW.AutoPollEvent
+
+  dirty <- newIORef True
+  quit  <- newIORef False
+  posM  <- newIORef (GL.Position 0 0)
+
+  -- mark screen dirty in refresh callback which is often called
+  -- when screen or part of screen comes into visibility.
+  GLFW.windowRefreshCallback $= writeIORef dirty True
+  GLFW.windowCloseCallback   $= do
+    writeIORef quit True
+    return True
+
+  -- use key callback to track whether ESC is pressed
+  GLFW.keyCallback $= \key st -> do
+    when (key == GLFW.SpecialKey GLFW.ESC && st == GLFW.Press) $ writeIORef quit True
+    when (key == GLFW.CharKey 'Q' && st == GLFW.Press) $ writeIORef quit True
+
+  font <- FTGL.createPolygonFont "MTLmr3m.ttf"
+  -- GL.renderbufferStorageMultiSample
+  FTGL.setFontFaceSize font 24 320
+
+  let (wx,wy)  = (600,400) :: (Float,Float)
+      wsz      = min wx wy
+      trans m (x,y) = (x + m, y + m)
+      color3 a b c = GL.color (GL.Color3 a b c :: GL.Color3 GL.GLfloat)
+
+  counter <- newIORef 0
+
+  let sq  (m,n,z) = [(m,m,z),(n,m,z),(n,n,z),(m,n,z)]
+  let sqn (m,n,z) = (0,0,(-1))
+  let render = do
+        -- l <- readIORef lines
+        GL.clear [GL.ColorBuffer,GL.DepthBuffer]
+
+        setupLight
+        color3 0.5 0.8 0.5
+        GL.lineWidth $= 1.0
+        GL.renderPrimitive GL.Quads $ do
+          mapM_ (\(x,y,z) -> GL.vertex (GL.Vertex3 x y (z :: GL.GLfloat))) $ sq ((-50),50,(-10))
+          -- (\(x,y,z) -> GL.normal (GL.Normal3 x y (z :: GLfloat))) $ sqn (wx,wy,1)
+          -- GL.normal (sqn (wx,wy))
+
+        c <- readIORef counter
+
+        GL.preservingMatrix $ do
+          color3 1 1 1
+          GL.translate $ (GL.Vector3 0 0 (-10.0) :: GL.Vector3 GL.GLfloat)
+          FTGL.renderFont font ("Test! : " ++ show c) (All :: FTGL.RenderMode)
+
+        modifyIORef counter (+ 1)
+
+        GL.renderbuff
+
+        -- color3 1 1 1
+        -- GL.rasterPos (GL.Vertex3 wy 0 -1)
+        -- GL.print (show c)
+        -- GL.flush
+        GLFW.swapBuffers
+
+  let loop = do
+        GLFW.waitEvents
+
+        -- redraw screen if dirty
+        d <- readIORef dirty
+        when d render
+        writeIORef dirty False
+        -- check if we need to quit the loop
+        q <- readIORef quit
+        unless q loop
+
+  let waitForPress = do
+        GLFW.mousePosCallback    $= \_   -> return ()
+        GLFW.mouseButtonCallback $= \b s -> do
+          when (b == GLFW.ButtonLeft && s == GLFW.Press) $ do
+            -- when left mouse button is pressed, add the point
+            -- to lines and switch to waitForRelease action.
+            GL.get GLFW.mousePos >>= writeIORef posM
+            waitForRelease 
+
+      waitForRelease = do
+        GLFW.mousePosCallback $= \(GL.Position x y) -> do
+          -- mark screen dirty
+          writeIORef dirty True
+
+        GLFW.mouseButtonCallback $= \b s ->
+          -- when left mouse button is released, switch back to
+          -- waitForPress action.
+          when (b == GLFW.ButtonLeft && s == GLFW.Release) $ do
+            (GL.Position px py) <- readIORef posM
+            (GL.Position cx cy) <- GL.get GLFW.mousePos
+
+            waitForPress
+
+  -- by default start with waitForPress
+  waitForPress
+  loop
+
+  -- finish up
+  GLFW.closeWindow 
+  GLFW.terminate
+
+  FTGL.destroyFont font
+  -- let stones = stones . table $ state
+
+{-
+
+-- | Create 'Font' from a given path.
+readFont :: FilePath -> IO Font
+readFont path = alloca $ \p -> do
+	runFT $ withCString path $ \str -> ft_New_Face ftlib str 0 p
+	face <- peek p
+	b <- peek (bbox face)
+	asc <- fromIntegral <$> peek (ascender face)
+	desc <- fromIntegral <$> peek (descender face)
+	u <- fromIntegral <$> peek (units_per_EM face)
+	let box = pure ((/u).fromIntegral) <*> Box
+		(V2 (xMin b) (yMin b))
+		(V2 (xMax b) (yMax b))
+	return $ Font face (asc/u) (desc/u) box
+
+-- | Single line text rendering
+textLine :: Font -> Float -> String -> IO (ForeignPtr Word8, V2 Int, Box V2 Int)
+textLine Font{fontFace = face} size text = do
+	let dpi = 72
+	runFT $ ft_Set_Char_Size face 0 (floor $ size * 64) dpi dpi
+	slot <- peek $ glyph face
+	
+	let text' = map fromEnum text
+	let measure :: Ptr V.FT_Vector -> Ptr FT_BBox -> (Int, Ptr FT_Glyph, Int, [Box V2 Int]) -> Int -> IO (Int, Ptr FT_Glyph, Int, [Box V2 Int])
+	    measure delta glyphBBox (prev, glyphs, penX, xs) ch = do
+		glyphIx <- ft_Get_Char_Index face (fromIntegral ch)
+		
+		ft_Get_Kerning face (fromIntegral prev) glyphIx (fromIntegral ft_KERNING_DEFAULT) delta
+		kx <- fromIntegral . V.x <$> peek delta
+		
+		runFT $ ft_Load_Glyph face glyphIx ft_LOAD_DEFAULT
+		runFT $ ft_Get_Glyph slot glyphs
+		
+		dx <- fromIntegral . V.x <$> peek (GS.advance slot)
+		glyph' <- peek glyphs
+		ft_Glyph_Get_CBox glyph' ft_GLYPH_BBOX_UNSCALED glyphBBox
+		bbox@FT_BBox{..} <- peek glyphBBox
+		--putStrLn $ show bbox
+		let (left, y) = (penX + kx, 0)
+		let f = fromIntegral
+		let box = Box (V2 (left + f xMin) (y + f yMin)) (V2 (left + f xMax) (y + f yMax))
+		--putStrLn $ show box
+		return (ch, advancePtr glyphs 1, penX+kx+dx, box:xs)
+	
+	let render :: Ptr FT_Glyph -> Ptr Word8 -> Int -> Box V2 Int -> Box V2 Int -> Int -> IO ()
+	    render glyphs dst bmpW (Box bmin bmax) (Box gmin gmax) i = do
+		let imgPtr = advancePtr glyphs i
+		--poke pen $ V.FT_Vector (fromIntegral x + fromIntegral loff) (fromIntegral toff)
+		--runFT $ ft_Glyph_To_Bitmap imgPtr ft_RENDER_MODE_NORMAL pen 1
+		-- destroy old glyph
+		runFT $ ft_Glyph_To_Bitmap imgPtr ft_RENDER_MODE_NORMAL nullPtr 1
+		img <- peek imgPtr
+		let im = BG.cast img
+		--bl <- fromIntegral <$> peek (left im)
+		--bt <- fromIntegral <$> peek (top im)
+		bmp <- peek $ bitmap im
+		--let bw = fromIntegral $ width bmp
+		--let bh = fromIntegral $ rows bmp
+		let image = buffer bmp
+		
+		let V2 (V2 xMin yMin) (V2 gxMin gyMin) = fmap (`shiftR` 6) <$> V2 bmin gmin
+		let V2 (V2 xMax yMax) (V2 gxMax gyMax) = fmap ((`shiftR` 6) . (+63)) <$> V2 bmax gmax
+		let V4 gl gt gw gh = V4 (-xMin+gxMin) (yMax-gyMax) (gxMax-gxMin) (gyMax-gyMin)
+		--putStrLn $ show ("left", bl, "top", bt, "gl", gl, "gt", gt)
+		--putStrLn $ show ("cols", bw, "rows", bh, "gw", gw, "gh", gh)
+		
+		forM_ [0..gh-1] $ \y -> do
+			--putStrLn $ show ((y + gt) * bmpW + gl, (y * gw), gw)
+			copyBytes (plusPtr dst $ (y + gt) * bmpW + gl) (plusPtr image (y * gw)) gw
+		ft_Done_Glyph img
+	
+	alloca $ \ftVec -> do
+		alloca $ \glyphBBox -> do
+			allocaArray (length text) $ \glyphs -> do
+				(_, _, textW, heads) <- foldM (measure ftVec glyphBBox) (0, glyphs, 0, []) text'
+				
+				let minimumBox = Box maxBound (V2 textW minBound)
+				let bitmapBox@(Box (V2 l b) (V2 r t)) = foldl union minimumBox heads
+				--putStrLn $ "BitBox: " ++ show (fmap (`div`64) bitmapBox)
+				
+				let bmpDim@(V2 w h) = (`shiftR` 6) <$> V2 (r - l + 63) (t - b + 63)
+				--putStrLn $ unwords ["all:",show(w * h),"W",show w,"H",show h,show heads]
+				
+				let alignedW = ((w + 3) `div` 4) * 4
+				fp <- mallocForeignPtrBytes (alignedW * h)
+				withForeignPtr fp $ \image -> do
+					memset image 0 (fromIntegral $ alignedW * h)
+					zipWithM (render glyphs image alignedW bitmapBox) (reverse heads) [0..]
+				return (fp, bmpDim, bitmapBox)
+
+foreign import ccall unsafe "FT_Glyph_Get_CBox"
+	ft_Glyph_Get_CBox :: FT_Glyph -> FT_UInt -> Ptr B.FT_BBox -> IO ()
+
+--ft_GLYPH_BBOX_PIXELS = 3
+ft_GLYPH_BBOX_UNSCALED = 0
+
+-}
+
+-- vertices = mapM_ (\(x,y) -> GL.vertex $ (GL.Vertex3 x y 1 :: GL.Vertex3 GL.GLfloat ))
+

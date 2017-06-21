@@ -1,0 +1,1 @@
+{'import', 'Test.QuickCheck.Gen', 'generate', 'shuffle', 'Control.Monad', 'forM', 'forM_', 'Control.Concurrent', 'newEmptyMVar', 'takeMVar', 'putMVar', 'forkIO', 'threadDelay', 'Data.Time.Clock', 'getCurrentTime', 'utctDayTime', 'sleepSort', 'unit', 'mvar', 'const', 'main', 'sorted', 'zipWith', 'tail', 'putStr', 'show', 'then', 'putStrLn', 'done', 'else', 'failed'}

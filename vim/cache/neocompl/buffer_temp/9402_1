@@ -1,0 +1,26 @@
+#!/bin/zsh
+#
+
+LineWidth=80
+
+while true
+do
+  inotifywait -q -e modify **/*.hs hs-othello.cabal stack.yaml README.md
+
+  for i in $(seq $LineWidth)
+  do
+    # echo -n "-"
+    echo -n '\x2d'
+  done
+  echo ''
+
+  echo -n "[$(date +"%Y/%m/%d %H:%M:%S")] Updated"
+  if (stack build) then
+    echo ""
+    stack exec hothello
+  else
+    echo " (skip execution)"
+  fi
+
+done
+

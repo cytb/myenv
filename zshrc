@@ -1,5 +1,20 @@
 # Path to your oh-my-zsh configuration.
-ZSH=$HOME/.oh-my-zsh
+# ZSH=$HOME/.oh-my-zsh
+source "${HOME}/.zgen/zgen.zsh"
+
+plugins=(git zsh-completions)
+
+# if the init scipt doesn't exist
+if ! zgen saved; then
+
+  # specify plugins here
+  zgen oh-my-zsh
+
+  # generate the init script from plugins above
+  zgen save
+fi
+
+autoload -U compinit && compinit
 
 # Set name of the theme to load.
 # Look in ~/.oh-my-zsh/themes/
@@ -40,15 +55,17 @@ COMPLETION_WAITING_DOTS="true"
 # Which plugins would you like to load? (plugins can be found in ~/.oh-my-zsh/plugins/*)
 # Custom plugins may be added to ~/.oh-my-zsh/custom/plugins/
 # Example format: plugins=(rails git textmate ruby lighthouse)
-plugins=(git)
-
-source $ZSH/oh-my-zsh.sh
+# plugins=(git)
+# source $ZSH/oh-my-zsh.sh
  
 zsh_p_ssh=""
 if [ -n "${SSH_CONNECTION}" ]; then
   zsh_p_ssh="%{$fg_bold[red]%}#ssh "
 fi
  
+prompt_char(){
+  echo -n ""
+}
 PROMPT="
 %(!.%{$fg_bold[red]%}.%{$fg_bold[green]%}%n@)%m${zsh_p_ssh} %{$fg_bold[blue]%}%(!.%1~.%~) $(git_prompt_info)%_
 %{$fg_bold[blue]%}$(prompt_char)%{$reset_color%} "
@@ -90,6 +107,7 @@ export_list(){
 }
 
 export EDITOR=vim
+export SYSTEMD_EDITOR="$EDITOR"
 
 # PROMPT='%{$fg_bold[red]%}➜ %{$fg_bold[green]%} %n %{$fg[cyan]%} %~ %{$fg_bold[blue]%}$(git_prompt_info)%{$fg_bold[blue]%} % %{$reset_color%}'
 # Customize to your needs...
@@ -101,6 +119,7 @@ export_list append_path_pre << end_path_list
 $HOME/node_modules/.bin
 $HOME/.local/opt/pd/bin
 $HOME/.local/bin
+$HOME/.local/tools
 $HOME/.cabal/bin
 $HOME/.npm/bin
 $HOME/.local/opt/netbeans-dev/bin
@@ -117,6 +136,7 @@ $HOME/.gem/ruby/2.2.0/bin
 /opt/bin
 /usr/games/bin
 /opt/android-sdk/platform-tools/
+/opt/sonarqube/sonar-scanner-2.8/bin
 $GOPATH/bin
 $HOME/.gem/ruby/2.1.0/bin
 $HOME/.local/opt/android-ndk/
@@ -153,10 +173,14 @@ enable_chromium_tools(){
   append_path_pre "$HOME/.local/opt/chromium/nacl_sdk/pepper_44/tools/"
 }
 
+hget(){
+  curl -e "$1" -O$(basename "$1") "$1"
+}
+
 # nvm
-# enable_nvm(){
-source $HOME/.nvm/nvm.sh
-# }
+if [ -f $HOME/.nvm/nvm.sh ]; then
+  source $HOME/.nvm/nvm.sh
+fi
 
 ###-begin-npm-completion-###
 #

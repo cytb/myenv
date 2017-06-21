@@ -1,0 +1,710 @@
+/*!
+  @file rx_fltk_window.cpp
+	
+  @brief FLTKによるウィンドウクラス
+ 
+  @author Makoto Fujisawa 
+  @date   2011-08
+*/
+
+
+//-----------------------------------------------------------------------------
+// インクルードファイル
+//-----------------------------------------------------------------------------
+// #include "rx_fltk_window.h"
+// #include "rx_atom_ini.h"
+#include <FL/Fl_Double_Window.H>
+#include <FL/Fl_Menu_Bar.H>
+#include <FL/Fl_Button.H>
+#include <FL/Fl_Scroll.H>
+#include <FL/filename.H>		// ファイル名
+#include <FL/Fl_File_Chooser.H>
+#include <FL/Fl_File_Icon.H>
+
+//-----------------------------------------------------------------------------
+// rxFlWindowクラスの実装
+//-----------------------------------------------------------------------------
+
+//! コンストラクタ
+class W : Fl_Double_Window {
+  int x_, y_, w_, h_;
+  bool fullScreen_;
+  char statusLabel_[128];
+
+  Fl_Gl_Window* glWindow_;
+  Fl_Menu_Bar* menuBar_;
+  Fl_Box* statusBox_;
+  Fl_Button* buttonStartStop_;
+  Fl_Button* buttonClear_;
+
+public:
+  W(int aW, int aH, const char* title)
+	: Fl_Double_Window(w_, h_, title), x_(100), y_(100), w_(aW), h_(aH)
+  {
+    this->fullScreen_  = false;
+    this->statusLabel_ = {0};
+
+    this->resizable(this);
+
+    int h_menu = 20;	// メニューバーの高さ
+    int h_gui = 120;	// ウィジット配置領域の高さ
+    int h_stat = 24;	// ステータスバーの高さ
+    int w_margin = 5;	// 水平方向マージン
+    int h_margin = 5;	// 垂直方向マージン
+
+    this->begin();
+    {
+      // 描画領域
+      int xs = w_margin;
+      int ys = h_menu + h_margin;
+      int ws = this->w() - w_margin*2;
+      int hs = this->h() - (h_menu + h_gui + h_stat + 4*h_margin);
+
+      {
+        Fl_Group *g = new Fl_Group(xs, ys, ws, hs, 0);
+        g->box(FL_NO_BOX);
+        {
+          auto* gl = new Fl_Gl_Window(xs, ys, ws, hs, 0, this);
+          gl->mode  (FL_RGB | FL_ALPHA | FL_DOUBLE | FL_DEPTH);
+          gl->box   (FL_FLAT_BOX);
+          gl->align (FL_ALIGN_INSIDE | FL_ALIGN_CENTER);
+          this->glWindow_ = gl;
+        }
+  
+        // D&Dボックス
+        /*
+        m_pDndBox = new rxFlDndBox(xs, ys, ws, hs, 0);
+        m_pDndBox->callback(OnDnd_s, this);
+        */
+        }
+        g->end();
+        Fl_Group::current()->resizable(g);
+    }
+    {
+      // メニューバー
+      auto* mb = new Fl_Menu_Bar(0, 0, w(), hs_menu, 0);
+
+      // Fileメニュー
+      mb->add("File/Open",               FL_CTRL+'f',          OnMenuFile_s, this); 
+      mb->add("File/Save",               FL_CTRL+FL_SHIFT+'s', OnMenuFile_s, this); 
+      mb->add("File/Save FrameBuffer  ", FL_CTRL+'s',          OnMenuFile_s, this); 
+      mb->add("File/----------------"); 
+      mb->add("File/Quit",               FL_Escape,            OnMenuFile_s, this);
+  
+      // Drawメニュー
+      /*
+      int count = 0;
+      while(RX_DRAW_STR[2*count] != "-1"){
+        string label = "Draw/"+RX_DRAW_STR[2*count]+"  ";
+        string shortcut = RX_DRAW_STR[2*count+1];
+        m_pMenuBar->add(RX_TO_CHAR(label), RX_TO_CHAR(shortcut), rxFlGLWindow::OnMenuDraw_s, m_pGLCanvas, FL_MENU_TOGGLE);
+        count++;
+      }
+      */
+
+      mb->add("OpenGL/Step",        ' ', OnMenuOpenGL_s, this); 
+      mb->add("OpenGL/Animation  ", 's', OnMenuOpenGL_s, this); 
+      mb->add("OpenGL/Init View  ", 't', OnMenuOpenGL_s, this); 
+  
+      // Windowメニュー
+      mb->add("Window/FullScreen  ", FL_ALT+FL_Enter, OnMenuWindow_s, this, FL_MENU_TOGGLE); 
+  
+      // Helpメニュー
+      mb->add("Help/Version", 0, OnMenuHelpVersion_s, this); 
+    }
+    {
+      // 下部GUI領域
+      int xs = w_margin;
+      int ys = this->h() - (h_stat + h_margin + h_gui);
+
+      auto* s = new Fl_Scroll(w_margin, ys, this->w() - 2*w_margin, h_gui, 0);
+      s->box(FL_FLAT_BOX);
+
+      xs += 7;
+      ys += 5;
+      int ws = 80;
+      int hs = 25;
+  
+      Fl_Boxtype boxtype = FL_FLAT_BOX;
+
+      // Start/Stopボタン
+      {
+        auto* b = new Fl_Button(xs, ys, ws, hs, "Start/Stop");
+        b->callback([&](Fl_Widget *widget, void* x) {
+        });
+        b->down_box(boxtype);
+        b->clear_visible_focus();
+        this->buttonStartStop_ = b;
+      }
+      {
+        // Clearボタン
+        auto * b = new Fl_Button(xs, ys+1*(hs+5), ws, hs, "Clear");
+        b->down_box(boxtype);
+        b->clear_visible_focus();
+        this->buttonClear = b;
+      }
+
+      //
+      // パラメータ
+      //
+      xs += ws + 7;
+      ys  = this->h() - (h_stat + h_margin + h_gui) + 5;
+      ws  = 180;
+      hs  = h_gui - 6;
+  
+    /*
+      {
+        Fl_Group* g = new Fl_Group(xs, ys, ws, hs, "Rotation");
+        g->box(FL_DOWN_BOX);
+        g->labelsize(12);
+        g->align(FL_ALIGN_TOP | FL_ALIGN_INSIDE);
+  
+        int len = hs-50;
+        int width = 24;
+  
+        // x軸回転
+        rxFlRoller *roller;
+        roller = new rxFlRoller(xs+30, ys+20, width, len);
+        roller->type(FL_VERTICAL);
+        roller->callback(OnRollerX_s, this);
+        roller->value(0.5);
+        
+        // y軸回転
+        roller = new rxFlRoller(xs+60, ys+20+len/2-width/2, len, width);
+        roller->type(FL_HORIZONTAL);
+        roller->callback(OnRollerY_s, this);
+        roller->value(0.5);
+  
+        // 慣性
+        Fl_Check_Button *check;
+        check = new Fl_Check_Button(xs+40, ys+20+len+3, 25, 25, " Inertia");
+        check->down_box(FL_DOWN_BOX);
+        check->callback(OnCheckInertia_s, this);
+        check->align(Fl_Align(FL_ALIGN_RIGHT));
+        check->value(m_pGLCanvas->m_iRotInertia);
+  
+        
+        sg->resizable(NULL);
+        sg->end();
+      }
+      g->resizable(NULL);
+      g->end();
+    }
+    {
+      // ステータスバー(Fl_Box)
+      int ys = h()-hs_stat;
+      auto* box = new Fl_Box(0, ys, this->w(), h_stat, "status");
+      box->box(FL_EMBOSSED_BOX);
+      box->align(FL_ALIGN_INSIDE | FL_ALIGN_WRAP | FL_ALIGN_RIGHT);
+      //m_pBoxStatus->color(color());
+      box->labelfont(FL_HELVETICA_BOLD);
+      statusBox_ = box;
+    }
+    */
+    *
+    end();
+  
+    Fl::focus(this->glWindow_);
+    resize(x_,y_,w_,h_);
+    UpdateMenuState();
+    this->show();
+  }
+  //! デストラクタ
+  virtual ‾W()
+  {
+    delete menuBar_;
+    delete glWindow_;
+    delete statusBox_;
+  }
+  
+  /*!
+   * チェック付メニュー項目の更新
+   */
+  void updateMenuState(void)
+  {
+    int current, count;
+      /*
+  
+    // Draw - FL_MENU_TOGGLE
+    current = m_pGLCanvas->m_iDraw;
+    count = 0;
+    while(RX_DRAW_STR[2*count] != "-1"){
+      string label = "Draw/"+RX_DRAW_STR[2*count]+"  ";
+      setMenuItemState(m_pMenuBar, RX_TO_CHAR(label), ((0x01 << count) & current), 1);
+      count++;
+    }
+  
+    // Windowメニュー
+    SetMenuItemState(m_pMenuBar, "Window/FullScreen  ", m_bFullScreen, 1);
+    */
+  }
+  
+  /*!
+   * メニュー:File -> Openのコールバック関数
+   * @param[in] widget ウィジットの親クラスオブジェクト
+   * @param[in] x ユーザ定義変数
+   */
+  void OnMenuFile_s(Fl_Widget *widget, void* x)
+  {
+  }
+  
+  void OnMenuFileOpen(void)
+  {
+    /*
+    string filter = "3D Files|*.obj;*.dxf;*.wrl;*.3ds;*.stl;*.ply|All Files|*.*";
+    vector<string> fns;
+    int n = ShowFileDialog(fns, "Open 3D file", filter, false);
+  
+    if(n > 0){
+      for(int i = 0; i < n; ++i){
+        Open(fns[i]);
+      }
+    }
+    */
+  }
+  void OnMenuFileSave(void)
+  { /*
+    string filter = "3D Files|*.obj;*.dxf;*.wrl;*.3ds;*.stl;*.ply|All Files|*.*";
+    vector<string> fns;
+    int n = ShowFileDialog(fns, "Save 3D file", filter, false);
+  
+    if(n > 0){
+      for(int i = 0; i < n; ++i){
+        Save(fns[i]);
+      }
+    }
+    */
+  }
+  void OnMenuFileSaveFrame(void)
+  { /*
+    string filter = "Image Files|*.bmp;*.png|All Files|*.*";
+    vector<string> fns;
+    int n = ShowFileDialog(fns, "Save FrameBuffer", filter, false);
+
+    if(n > 0){
+      for(int i = 0; i < n; ++i){
+        Save(fns[i]);
+      }
+    }
+    */
+  }
+  void OnMenuFileQuit(void)
+  { /*
+    WriteConfig(RX_PROGRAM_NAME);
+    */
+    exit(0);
+  }
+  /*!
+   * Drawメニューのコールバック関数
+   * @param[in] widget ウィジットの親クラスオブジェクト
+   * @param[in] x ユーザ定義変数
+   */
+  void OnMenuOpenGL_s(Fl_Widget *widget, void* x)
+  { /*
+    Fl_Menu_Bar *menubar = (Fl_Menu_Bar*)widget;
+    char picked[80];
+    menubar->item_pathname(picked, sizeof(picked)-1);	// メニュー名
+  
+    string label = picked;
+    string menu_name = "OpenGL/";
+    label = label.substr(menu_name.size(), string::npos);
+    
+    ((rxFlWindow*)x)->OnMenuOpenGL(label);
+   */
+  }
+  void OnMenuOpenGL(string label)
+  { /*
+    if(label.find("Step") == 0){// アニメーション1ステップだけ実行
+      m_pGLCanvas->Idle();
+    }
+    else if(label.find("Animation") == 0){	// アニメーションON/OFF
+      m_pGLCanvas->SwitchIdle(-1);
+    }
+    else if(label.find("Init View") == 0){	// 視点初期化
+      m_pGLCanvas->InitView();
+    }
+   */
+  }
+  
+  
+  /*!
+   * Windowメニューのコールバック関数
+   * @param[in] widget ウィジットの親クラスオブジェクト
+   * @param[in] x ユーザ定義変数
+   */
+  void OnMenuWindow_s(Fl_Widget *widget, void* x)
+  { /*
+    Fl_Menu_Bar *menubar = (Fl_Menu_Bar*)widget;
+    char picked[80];
+    menubar->item_pathname(picked, sizeof(picked)-1);	// メニュー名
+  
+    string label = picked;
+    string menu_name = "Window/";
+    label = label.substr(menu_name.size(), string::npos);
+    
+    ((rxFlWindow*)x)->OnMenuWindow(label);
+    */
+  }
+  void OnMenuWindow(string label)
+  {
+    if(label.find("FullScreen") == 0){	// フルスクリーンON/OFF
+      // SwitchFullScreen();
+    }
+  }
+  /*!
+   * メニュー:Help -> Versionのコールバック関数
+   * @param[in] widget ウィジットの親クラスオブジェクト
+   * @param[in] x ユーザ定義変数
+   */
+  void OnMenuHelpVersion_s(Fl_Widget *widget, void* x)
+  {
+    fl_message("OpenGL Application by FLTK¥n  version 1.0");
+  }
+  /*!
+   * rxFlDndBoxのコールバック関数
+   * @param[in] widget ウィジットの親クラスオブジェクト
+   * @param[in] x ユーザ定義変数
+   */
+  void OnDnd_s(Fl_Widget *widget, void* x)
+  {
+    // ((rxFlWindow*)x)->OnDnd();
+  }
+  void rxFlWindow::OnDnd(void)
+  {/*
+    if(m_pDndBox->Event() == FL_PASTE){
+      int dnd_text_len = m_pDndBox->EventTextLength();
+      string dnd_text = m_pDndBox->EventText();
+  
+      // テキストを¥nで分割
+      vector<string> fns;
+      size_t pos0 = 0, pos1 = 0;
+      do{
+        pos1 = dnd_text.find('¥n', pos0);
+        string fn = dnd_text.substr(pos0, pos1-pos0);
+        if(fn.empty()) break;
+  
+        fns.push_back(fn);
+        pos0 = pos1+1;
+      }while(pos1 != string::npos);
+  
+      int n = (int)fns.size();
+      for(int i = 0; i < n; ++i){
+        cout << "file" << i << " : " << fns[i] << endl;
+      }
+  
+      if(n == 0) return;
+  
+      for(int i = 0; i < n; ++i){
+        Open(fns[i]);
+      }
+    }
+    */
+  }
+  
+  
+  /*!
+   * Fl_Buttonのコールバック関数
+   * @param[in] widget ウィジットの親クラスオブジェクト
+   * @param[in] x ユーザ定義変数
+   */
+  /*!
+  void OnButtonStart_s(Fl_Widget *widget, void* x)
+  {
+    ((rxFlWindow*)x)->OnButtonStart();
+  }
+  void rxFlWindow::OnButtonStart(void)
+  {
+    m_pGLCanvas->SwitchIdle(-1);
+  }
+  */
+  
+  /*!
+   * Fl_Buttonのコールバック関数 - Applyボタン
+   * @param[in] widget ウィジットの親クラスオブジェクト
+   * @param[in] x ユーザ定義変数
+   */
+  /*
+  void rxFlWindow::OnButtonApply_s(Fl_Widget *widget, void* x)
+  {
+    ((rxFlWindow*)x)->OnButtonApply(widget);
+  }
+  void rxFlWindow::OnButtonApply(Fl_Widget *widget)
+  {
+  }
+  
+  */
+  /*!
+   * Fl_Buttonのコールバック関数
+   * @param[in] widget ウィジットの親クラスオブジェクト
+   * @param[in] x ユーザ定義変数
+   */
+  /*
+  void rxFlWindow::OnButtonClear_s(Fl_Widget *widget, void* x)
+  {
+    ((rxFlWindow*)x)->OnButtonClear();
+  }
+  void rxFlWindow::OnButtonClear(void)
+  {
+    m_pGLCanvas->ClearObject();
+  }
+  */
+  
+  
+  
+  /*!
+   * Fl_Rollerのコールバック関数
+   * @param[in] widget ウィジットの親クラスオブジェクト
+   * @param[in] x ユーザ定義変数
+   */
+  /*!
+  void rxFlWindow::OnRollerX_s(Fl_Widget *widget, void* x)
+  {
+    ((rxFlWindow*)x)->OnRollerX(widget);
+  }
+  void rxFlWindow::OnRollerX(Fl_Widget *widget)
+  {
+    rxFlRoller *roller = (rxFlRoller*)widget;
+    double val = roller->value();
+    m_pGLCanvas->SetRotation(val-0.5, 1, 0, 0, roller->IsDrag());
+  }
+  */
+  
+  /*!
+   * Fl_Rollerのコールバック関数
+   * @param[in] widget ウィジットの親クラスオブジェクト
+   * @param[in] x ユーザ定義変数
+   */
+  /*!
+  void rxFlWindow::OnRollerY_s(Fl_Widget *widget, void* x)
+  {
+    ((rxFlWindow*)x)->OnRollerY(widget);
+  }
+  void rxFlWindow::OnRollerY(Fl_Widget *widget)
+  {
+    rxFlRoller *roller = (rxFlRoller*)widget;
+    double val = roller->value();
+    m_pGLCanvas->SetRotation(val-0.5, 0, 1, 0, roller->IsDrag());
+    redraw();
+  }
+  
+   */
+  /*!
+   * Fl_Check_Buttonのコールバック関数 - Inertia
+   * @param[in] widget ウィジットの親クラスオブジェクト
+   * @param[in] x ユーザ定義変数
+   */
+  /*!
+  void rxFlWindow::OnCheckInertia_s(Fl_Widget *widget, void* x)
+  {
+    ((rxFlWindow*)x)->OnCheckInertia(widget);
+  }
+  void rxFlWindow::OnCheckInertia(Fl_Widget *widget)
+  {
+    Fl_Check_Button *check = (Fl_Check_Button*)widget;
+    string label = check->label();
+    double val = check->value();
+  
+    if(label.find("Inertia") != string::npos){
+      m_pGLCanvas->m_iRotInertia = (int)(val+0.01);
+      if(!m_pGLCanvas->m_iRotInertia){
+        m_pGLCanvas->SwitchIdle(0);
+      }
+    }
+  
+    UpdateMenuState();
+  }
+   */
+  
+  
+  
+  /*!
+   * ステータスバーに文字列を設定
+   * @param[in] label 表示文字列
+   */
+  void SetStatusLabel(const string &label)
+  {
+  /*!
+    if(m_pStatusLabel) delete [] m_pStatusLabel;
+    m_pStatusLabel = RX_TO_CHAR(label);
+    m_pBoxStatus->label(m_pStatusLabel);
+   */
+  }
+  
+  /*!
+   * ファイル読み込み
+   * @param[in] fn ファイルパス
+   */
+  void Open(const string &fn)
+  {
+  /*!
+    string ext = GetExtension(fn);
+  
+    if(ext == "obj" || ext == "dxf" || ext == "wrl" || ext == "3ds" || ext == "stl" || ext == "ply"){
+      m_pGLCanvas->OpenFile(fn);
+    }
+    else if(ext == "bmp" || ext == "jpg" || ext == "png" || ext == "gif" || ext == "tif"){
+      return;
+    }
+  
+    // 読み込んだファイル情報を格納
+    m_strFullPath = fn;
+    m_strFileName = GetFileName(fn);
+  
+    // ファイル名をステータスバーに表示
+    SetStatusLabel(m_strFileName);
+   */
+  }
+  
+  /*!
+   * ファイル書き込み
+   * @param[in] fn ファイルパス
+   */
+  void Save(const string &fn)
+  {
+  /*!
+    string ext = GetExtension(fn);
+  
+    if(ext == "obj" || ext == "dxf" || ext == "wrl" || ext == "3ds" || ext == "stl" || ext == "ply"){
+      m_pGLCanvas->SaveFile(fn);
+  
+      // 読み込んだファイル情報を格納
+      m_strFullPath = fn;
+      m_strFileName = GetFileName(fn);
+  
+      // ファイル名をステータスバーに表示
+      SetStatusLabel(m_strFileName);
+    }
+    else if(ext == "bmp" || ext == "png"){
+      m_pGLCanvas->SaveDisplay(fn);
+    }
+   */
+  }
+  
+  
+  
+  /*!
+   * 設定ファイル読み込み
+   * @param[in] fn 設定ファイル名(拡張子無し)
+   */
+  void ReadConfig(const string &fn)
+  {
+  /*!
+    // アプリケーション管理設定ファイル
+    if(!g_pINI) g_pINI = new rxINI();
+  
+    g_pINI->Set("window", "width",  &m_iWinW, m_iWinW);
+    g_pINI->Set("window", "height", &m_iWinH, m_iWinH);
+    g_pINI->Set("window", "pos_x",  &m_iWinX, m_iWinX);
+    g_pINI->Set("window", "pos_y",  &m_iWinY, m_iWinY);
+  
+    if(!(g_pINI->Load(fn+".ini"))){
+      cout << "Failed opening the " << fn << ".ini file!" << endl;
+    }
+   */
+  }
+  /*!
+   * 設定ファイル書き込み
+   * @param[in] fn 設定ファイル名(拡張子無し)
+   */
+  void WriteConfig(const string &fn)
+  {
+  /*!
+    m_iWinW = w();
+    m_iWinH = h();
+    m_iWinX = x();
+    m_iWinY = y();
+    if(g_pINI->Save(fn+".ini")){
+      cout << "save : " << fn << ".ini" << endl;
+    }
+   */
+  }
+  
+  /*!
+   * フルスクリーン/ウィンドウ表示の切り替え
+   */
+  void SwitchFullScreen(void)
+  {
+  /*!
+    static int pos0[2] = { 0, 0 };
+    static int win0[2] = { 500, 500 };
+    if(m_bFullScreen){
+      fullscreen_off(pos0[0], pos0[1], win0[0], win0[1]);
+      m_bFullScreen = 0;
+    }
+    else{
+      pos0[0] = x();
+      pos0[1] = y();
+      win0[0] = w();
+      win0[1] = h();
+      fullscreen();
+      m_bFullScreen = 1;
+    }
+   */
+  }
+  
+  /*!
+   * イベントハンドラ
+   * @param[in] ev イベントID
+   */
+  int handle(int ev)
+  {
+    switch(ev){
+    case FL_DND_ENTER:
+    case FL_DND_RELEASE:
+    case FL_DND_LEAVE:
+    case FL_DND_DRAG:
+    case FL_PASTE:
+      return 1;
+  
+    case FL_PUSH:		// マウスボタンダウン
+      // m_pGLCanvas->Mouse(Fl::event_button(), 1, Fl::event_x()-m_iMouseOffset[0], Fl::event_y()-m_iMouseOffset[1]);
+      break;
+    case FL_RELEASE:	// マウスボタンアップ
+      // m_pGLCanvas->Mouse(Fl::event_button(), 0, Fl::event_x()-m_iMouseOffset[0], Fl::event_y()-m_iMouseOffset[1]);
+      break;
+    case FL_DRAG:		// マウスドラッグ
+      // m_pGLCanvas->Motion(Fl::event_x()-m_iMouseOffset[0], Fl::event_y()-m_iMouseOffset[1]);
+      break;
+    case FL_MOVE:		// マウス移動
+      // m_pGLCanvas->PassiveMotion(Fl::event_x()-m_iMouseOffset[0], Fl::event_y()-m_iMouseOffset[1]);
+      break;
+  
+    case FL_KEYBOARD:	// キーダウン
+      // m_pGLCanvas->Keyboard(Fl::event_key(), Fl::event_x()-m_iMouseOffset[0], Fl::event_y()-m_iMouseOffset[1]);
+      // UpdateMenuState();
+      break;
+  
+    case FL_SHORTCUT:	// グローバルショートカット
+      break;
+  
+    default:
+      break;
+    }
+  
+    return Fl_Window::handle(ev);
+  }
+
+}
+
+int main(int argc, char *argv[])
+{
+	// コマンドライン引数
+  /*
+	if(argc >= 2){
+		for(int i = 1; i < argc; ++i){
+			string fn = argv[i];
+			g_vDefaultFiles.push_back(fn);
+		}
+	}
+  */
+	glutInit(&argc, argv);
+	glewInit();
+
+    Fl::visual(FL_DOUBLE | FL_RGB);
+    Fl::get_system_colors();
+    // fl_register_images();
+    Fl::scheme("gtk+");
+
+	W win(640, 640, "opengl application");
+	return Fl::run();
+}

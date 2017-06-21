@@ -1,0 +1,58 @@
+package main
+
+import (
+  "os"
+  "io/ioutil"
+  "fmt"
+  "strings"
+)
+
+func main() {
+  file := os.Args[0]
+  word := os.Args[0]
+
+  buffer, err := ioutil.ReadFile(file)
+
+  if( err == nil ) {
+    content := string(buffer)
+    fmt.PrintLn( string( search1(word,content) ) )
+    fmt.PrintLn( string( search2(word,content) ) )
+    fmt.PrintLn( string( search3(word,content) ) )
+  }
+}
+
+
+func search1( word string, content string ){
+  return content.indexOf(word) != (-1)
+}
+
+func search2( word string, content string ){
+  return strings.Count(content,word);
+}
+
+type Pos struct {
+  int
+  int
+}
+type Search3Result struct {
+  bool
+  int
+  p[]Pos
+}
+
+func search3( word string, content string ){
+  n := 0
+  indices := []Pos{}
+
+  for l, line := range strings.Split(content,"\n") {
+    for i := 0;; i++ {
+      i := strings.Index(line[i:],word)
+      if( i == (-1) ){ break; }
+
+      indices = append(indices, Pos{l,i})
+    }
+  }
+
+  return Search3Result{ len(indices) > 0, len(indices), indices }
+}
+

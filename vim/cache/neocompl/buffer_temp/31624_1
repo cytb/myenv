@@ -1,0 +1,26 @@
+!----------------------------------------------------------
+! xmessage
+!----------------------------------------------------------
+  
+Xmessage*background:                   #fff
+Xmessage*shapeStyle:                   RoundedRectangle
+Xmessage.form.okay.shapeStyle:         Rectangle
+Xmessage.form.okay.background:         #ccc
+Xmessage.form.okay.foreground:         snow
+Xmessage.form.okay.borderWidth:        1
+!xmessage*message*background:          snow
+Xmessage*defaultButton:                okay
+!Xmessage*Background:                  black
+!Xmessage*Foreground:                  grey85
+!Xmessage.Scrollbar:                   WhenNeeded
+Xmessage.form.message.Scroll:          WhenNeeded
+Xmessage*Font:                         -*-ms gothic-*-*-*-*-12-*-*-*-*-*-*-*
+Xmessage*borderColor:                  #333
+Xmessage*borderWidth:                  1
+!Xmessage*Text.borderWidth:            0
+Xmessage*Command.shapeStyle:           RoundedRectangle
+Xmessage*Text.?.cursorColor:           white
+
+
+
+RXmessage*Text.?.cursorColor:           white

@@ -1,0 +1,22 @@
+
+import Test.QuickCheck.Gen(generate,shuffle)
+
+main = do
+  rlist <- generate . shuffle $ [1..1000]
+  print rlist
+
+sleepSort :: [Int] -> [Int]
+sleepSort xs = unsafePerformIO $ do
+  res <- newMVar []
+  ws  <- traverse (sleepSort' res) xs
+  traverse_ takeMVar ws
+  takeMVar res
+  where
+    sleepSort' res x = do
+      w <- newEmptyMVar
+      void $ forkIO $ do
+        threadDelay (x * 1000000)
+        print x -- just so you can see the magic happen
+        modifyMVar_ res (return . (++ [x]))
+        putMVar w ()
+      return w

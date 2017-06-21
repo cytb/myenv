@@ -1,0 +1,1 @@
+{'import', 'System.Random', 'randomRIO', 'Data.List', 'shuffle', 'takes', 'mapM', 'length', 'return', 'sortBy', 'comparing', 'main', 'rlist', 'print'}

@@ -1,0 +1,8 @@
+#!/bin/sh
+while true
+do
+  inotifywait -e modify **/*.hs hs-othello.cabal stack.yaml README.md
+  istack build
+  stack exec hothello
+done
+

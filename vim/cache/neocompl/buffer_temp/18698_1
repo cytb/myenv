@@ -1,0 +1,22 @@
+#!/bin/zsh
+
+DEBUG=true
+
+source ./watcher.sh
+
+execute_stack(){
+  FLAG=""
+
+  if [ "$DEBUG" = "true" ]
+  t
+    FLAG="--flag hs-othello:FastCompile"
+  fi
+
+  if (stack build $FLAG) then
+    stack exec $binary
+  else
+    echo "(... Skipped Execution ...)"
+  fi
+}
+
+watch execute_stack **/*.hs hs-othello.cabal stack.yaml README.md

@@ -1,0 +1,161 @@
+/*!
+  @file rx_fltk_glcanvas.h
+	
+  @brief FLTKによるOpenGLウィンドウクラス
+ 
+  @author Makoto Fujisawa 
+  @date   2011-09
+*/
+
+#ifndef _RX_FLTK_GLCANVAS_H_
+#define _RX_FLTK_GLCANVAS_H_
+
+
+//-----------------------------------------------------------------------------
+// インクルードファイル
+//-----------------------------------------------------------------------------
+#include <iostream>
+
+// STL
+#include <vector>
+#include <string>
+
+// FLTK
+#include <FL/Fl_Gl_Window.H>
+#include <FL/Fl_Menu_Bar.H>
+#include <FL/Fl_Spinner.H>
+#include <FL/Fl_Value_Slider.H>
+#include <FL/Fl_Check_Button.H>
+
+#include "rx_fltk_widgets.h"
+
+// トラックボール
+// #include "rx_trackball.h"
+
+// 3Dモデル入出力
+-#include "rx_model.h"
+
+// ファイル
+#include "rx_file.h"
+
+
+using namespace std;
+
+//-----------------------------------------------------------------------------
+// MARK:定義/定数
+//-----------------------------------------------------------------------------
+class rxFlWindow;
+
+// 描画フラグ
+enum
+{
+	RX_IDD_VERTEX	= 0x0001,	//!< 頂点描画
+	RX_IDD_EDGE		= 0x0002,	//!< エッジ描画
+	RX_IDD_FACE		= 0x0004,	//!< 面描画
+	RX_IDD_NORMAL	= 0x0008,	//!< 法線描画
+	RX_IDD_AXIS		= 0x0010,	//!< 軸描画
+};
+const string RX_DRAW_STR[] = {
+	"Vertex",	"v", 
+	"Edge",		"e", 
+	"Face",		"f", 
+	"Normal",	"n", 
+	"Axis",		"a", 
+	"-1"
+};
+
+
+//-----------------------------------------------------------------------------
+//! rxFlGLWindowクラス - fltkによるOpenGLウィンドウ
+//-----------------------------------------------------------------------------
+class rxFlGLWindow : public Fl_Gl_Window
+{
+protected:
+	int m_iWinW;			//!< 描画ウィンドウの幅
+	int m_iWinH;			//!< 描画ウィンドウの高さ
+	int m_iMouseButton;		//!< マウスボタンの状態
+	int m_iKeyMod;			//!< 修飾キーの状態
+	rxTrackball m_tbView;	//!< トラックボール
+
+	double m_fBGColor[3];	//!< 背景色
+	bool m_bAnimation;		//!< アニメーションON/OFF
+
+	rxFlWindow *m_pParent;	//!< 親クラス
+
+	vector<rxPolygons> m_vPolys;	//!< ポリゴンオブジェクト
+
+	double m_fRot[4];		//!< 回転量(回転角と回転軸)
+	bool m_bRotDrag;		//!< 回転ドラッグ中はtrue
+
+public:
+	int m_iDraw;			//!< 描画フラグ
+	int m_iRotInertia;		//!< 回転時に慣性力をつける
+
+public:
+	//! コンストラクタ
+	rxFlGLWindow(int x, int y, int w, int h, const char* l, void *parent);
+
+	//! デストラクタ
+	‾rxFlGLWindow();
+
+public:
+	void InitGL(void);
+	void Resize(int w, int h);
+
+	void Projection(int w, int h);
+	void RenderScene(void);
+
+	void Display(void);
+	void Mouse(int button, int state, int x, int y);
+	void Motion(int x, int y);
+	void PassiveMotion(int x, int y);
+	void Idle(void);
+	void Timer(void);
+	void Keyboard(int key, int x, int y);
+
+	void InitView(void);
+
+	static void OnTimer_s(void* x);
+	static void OnIdle_s(void* x);
+
+	void SetRotation(double ang, double x, double y, double z, int drag);
+
+	void SwitchIdle(int on);
+	void SwitchFullScreen(void);
+	
+	void OpenFile(const string &fn);
+	void SaveFile(const string &fn);
+
+	void SaveDisplay(const string &fn);
+	void ClearObject(void);
+
+private:
+	//! 描画コールバック関数のオーバーライド
+	void draw(void)
+	{
+		if(!context_valid()) InitGL();
+		if(!valid()) Resize(w(), h());
+		Display();    // OpenGL描画
+    }
+
+	//! リサイズコールバック関数のオーバーライド
+	void resize(int x_, int y_, int w_, int h_)
+	{
+		Fl_Gl_Window::resize(x_, y_, w_, h_);
+		//Resize(w_, h_);
+    }
+
+public:
+	int handle(int e);	// handle関数のオーバーライド
+
+	// メニューイベントハンドラ
+	static void OnMenuDraw_s(Fl_Widget *widget, void* x);
+	inline void OnMenuDraw(double val, string label);
+
+
+};
+
+
+
+
+#endif // #ifdef _RX_FLTK_GLCANVAS_H_

@@ -1,0 +1,45 @@
+module Main where
+ 
+import Data.Time.Clock.POSIX(getPOSIXTime)
+import System.Random.Mersenne.Pure64(pureMT,randomInt)
+import System.Environment(getArgs)
+import Data.List(unfoldr)
+ 
+import Othello.Core
+import Othello.Game(looper, getPlayers)
+-import qualified Othello.Renderer.Gloss as Gloss
+-- import qualified Othello.Renderer.GLFW as GLFW
+import qualified Othello.Renderer.FLTK as FLTK
+ 
+randomList time = unfoldr (Just . randomInt) .  pureMT $ round (time * 1000)
+
+baseState = GameState {
+      fps        = 30
+    , frames     = 0
+    , seeds      = [0]
+    , steps      = 0
+    , windowSize = (640,480)
+    , skipped    = False
+    , finished   = False
+    , table      = initialTable 10
+    , players    = []
+    , history    = []
+  }
+  where
+    initialTable sz = ReversiTable {
+        size   = sz
+      , stones = [(White,(m,m)),(White,(n,n)),(Black,(n,m)),(Black,(m,n))]
+      }
+        where (m,n) = (sz `div` 2 - 1, sz `div` 2)
+
+main = do
+  argv <- getArgs
+  time <- getPOSIXTime  
+  let proc         = if null argv then "man" else head argv
+      initialState = baseState {
+          seeds   = randomList time
+        , players = getPlayers proc
+        }
+ 
+  FLTK.play looper $ initialState -- {fps = 0}
+ 

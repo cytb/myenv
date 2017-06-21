@@ -2,4 +2,8 @@
 /vim/sessions
 /vim/.*
 !/vim/.vimrc
+/neovim/bundle
+/neovim/sessions
+/neovim/.*
+!/neovim/.vimrc
 

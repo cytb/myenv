@@ -1,0 +1,9 @@
+
+launcher = require("simple-autoreload-server");
+
+launcher({
+  l
+  inject : {
+    which: /\/$/
+  }
+});

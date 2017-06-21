@@ -1,0 +1,28 @@
+[Added Associations]
+application/zip=7-Zip File Manager.desktop;mcomix.desktop;
+application/vnd.rar=wine-Programs-7-Zip-7-Zip File Manager.desktop;mcomix.desktop;J7Z.desktop;
+inode/directory=pcmanfm.desktop;
+x-scheme-handler/trash=pcmanfm.desktop;
+image/jpeg=userapp-shotwell-9C8FSY.desktop;shotwell-viewer.desktop;
+application/x-bzip-compressed-tar=wine-Programs-7-Zip-7-Zip File Manager.desktop;
+audio/mpeg=vlc.desktop;smplayer.desktop;
+text/plain=leafpad.desktop;
+application/x-partial-download=org.gnome.FileRoller.desktop;
+image/png=shotwell-viewer.desktop;
+application/x-tar=wine-Programs-7-Zip-7-Zip File Manager.desktop;
+application/x-compressed-tar=wine-Programs-7-Zip-7-Zip File Manager.desktop;
+application/x-cd-image=wine-Programs-7-Zip-7-Zip File Manager.desktop;
+
+[Default Applications]
+application/zip=7-Zip File Manager.desktop;wine-Programs-7-Zip-7-Zip File Manager.desktop
+application/vnd.rar=wine-Programs-7-Zip-7-Zip File Manager.desktop
+inode/directory=pcmanfm.desktop
+x-scheme-handler/trash=pcmanfm.desktop
+image/jpeg=userapp-shotwell-9C8FSY.desktop
+audio/mpeg=smplayer.desktop
+text/plain=leafpad.desktop
+image/png=shotwell-viewer.desktop
+application/x-tar=wine-Programs-7-Zip-7-Zip File Manager.desktop
+application/x-compressed-tar=wine-Programs-7-Zip-7-Zip File Manager.desktop
+
+[Removed Associations]

@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+  <!-- Basic Page Needs
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <meta charset="utf-8">
+  <title>Your page title here :)</title>
+  <meta name="description" content="">
+  <meta name="author" content="">
+
+  <!-- Mobile Specific Metas
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- FONT
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <link href="//fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">
+
+  <!-- CSS
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <link rel="stylesheet" href="css/normalize.css">
+  <link rel="stylesheet" href="css/skeleton.css">
+
+  <!-- Favicon
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <link rel="icon" type="image/png" href="images/favicon.png">
+
+  <script type="text/javascript" src="zepto.min.js"></script>
+  <script type="text/javascript" src="velocity.min.js"></script>
+
+</head>
+<body>
+
+  <!-- Primary Page Layout
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <div class="container">
+    <div class="row">
+      <div class="one-half column" style="margin-top: 25%">
+        <h4> Display size calculation </h4>
+        <form class="column" name="input" id="calc">
+          <div>
+            width:  <input type="text" name="ratio-width"  id="input-ratio-width"  value="1920"  />
+          </div>
+          <div id="times-wh"> x </div>
+          <div>
+            height: <input type="text" name="ratio-height" id="input-ratio-height" value="1080" />
+          </div>
+          <div>
+            diagonal: <input type="text" name="diagonal" id="input-diagonal" value="24" />
+            <select name="unit-from" id="input-unit-from"></select>
+          </div>
+          <div>
+            to unit: <select name="unit-to" id="input-unit-to"></select>
+          </div>
+        </form>
+      </div>
+      <div class="one-half column" style="margin-top: 25%">
+        <h5  id="output"></h5>
+        <div id="output-rect"></div>
+      </div>
+    </div>
+    <div class="row">
+      <input type="button" id="button-fullscreen-preview" value="preview" />
+    </div>
+  </div>
+
+  <div id="preview-box">
+    <div id="preview"> </div>
+  </div>
+
+<!-- End Document
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <script type="text/javascript" src="livescript-min.js"></script>
+  <script type="text/ls">
+    units =
+      inch: 2.54
+      cm:   1
+      feet: 10
+
+
+    requestFullscreen =
+      let it = document.body
+        it.webkitRequestFullscreen or
+        it.mozRequestFullScreen or
+        it.msRequestFullscreen or
+        it.requestFullscreen
+
+    exitFullscreen =
+      let it = document
+        it.webkitCancelFullScreen or
+        it.mozCancelFullScreen or
+        it.msExitFullscreen or
+        it.cancelFullscreen or
+        it.exitFullscreen
+
+    on-change = ->
+      width     = $ '#input-ratio-width'  .val!
+      height    = $ '#input-ratio-height' .val!
+      unit-from = $ '#input-unit-from'    .val!
+      unit-to   = $ '#input-unit-to'      .val!
+      diagonal  = $ '#input-diagonal'     .val!
+
+      unit-name = $ '#input-unit-to option' .filter (-> $ @ .prop 'selected') .text!
+
+      unit-ratio   = unit-from / unit-to 
+
+      width-ratio  = width  / (width * 1 + height * 1)
+      height-ratio = height / (width * 1 + height * 1)
+
+      coe = (->
+        x = width-ratio
+        diagonal / (Math.sqrt ((2 * x * x) - (2 * x) + 1))
+      )!
+
+      height-to = ((height-ratio * coe) * unit-ratio) .to-precision 4
+      width-to  = ((width-ratio  * coe) * unit-ratio) .to-precision 4
+
+      from-yuv = (y,cb,cr)->
+        between = (lbound, ubound, x) -->
+          Math.max lbound, (Math.min ubound, (Math.floor x))
+
+        rgb-bound = between 0, 255
+
+        fig2 = ->
+          if it.length < 2
+          then '0' + it
+          else       it
+
+        int-hex-rgb = fig2 . (.to-string 16) . rgb-bound
+
+        y  = between 16, 235, y
+        cr = between 16, 240, cr
+        cb = between 16, 240, cb
+
+        bs = 1.164 * ( y - 16 )
+        r = bs + (1.596 * (cr - 128))
+        g = bs - (0.391 * (cb - 128)) - (0.813 + (cr - 128))
+        b = bs + (2.018 * (cb - 128))
+
+        '#' + ([r,g,b].map int-hex-rgb .join '')
+
+      rect-base  = 480
+      rect-color = from-yuv 122, (235 * width-ratio), (235 * height-ratio)
+
+      larger = Math.max width-ratio, height-ratio
+
+      screen-whole        = (window.screen.width + window.screen.height)
+      screen-width-ratio  = window.screen.width  / screen-whole
+      screen-height-ratio = window.screen.height / screen-whole
+      screen-larger       = Math.max screen-width-ratio, screen-height-ratio
+
+      console.log [width-ratio,screen-width-ratio,larger]
+
+      if width-ratio > screen-width-ratio
+        $ '#preview'
+          .css 'width',  '100%'
+      else
+        $ '#preview'
+          .css 'width',  ((width-ratio / height-ratio) * (screen-height-ratio / screen-width-ratio)) * 100 + '%'
+
+      $ '#preview'
+        .css 'padding-top', ( height-ratio / width-ratio ) * 100 + '%'
+        .css 'background-color', rect-color
+        .click!
+
+      $ '#output' .text "#width-to #unit-name x #height-to #unit-name"
+      $ '#output-rect' .text ' ' .velocity "stop", true .velocity {
+          width:  (rect-base * width-ratio)
+          height: (rect-base * height-ratio)
+          backgroundColor: rect-color
+      }, {
+          duration: 400
+          easing: "swing"
+      }
+
+    $ ->
+      #ready
+      for name, unit of units
+        option = "<option value='#unit'>#name</option>"
+        $ '#input-unit-from' .append option
+        $ '#input-unit-to'   .append option
+
+      $ '#preview-box'
+        .css 'position', 'fixed'
+        .css 'top', '0px'
+        .css 'left', '0px'
+        .css 'width', '100%'
+        .css 'height', '100%'
+        .css 'margin', 'auto'
+        .css 'background-color', '#333'
+        .css 'opacity', '0.8'
+        .css 'z-index', '100'
+        .on 'click', ->
+          $ '#preview-box' .hide!
+          $ '.container' .show!
+          exitFullscreen.call document
+
+
+      $ '#preview'
+        .css 'position', 'relative'
+        .css 'top', '50%'
+        .css 'transform', 'translateY(-50%)'
+        .css 'margin', 'auto'
+
+      $ '#output-rect, #button-fullscreen-preview' .on 'click', ->
+        $ '.container' .hide!
+        requestFullscreen.call ($ '#preview-box' .get 0)
+        $ '#preview-box' .show!
+
+      $ '#input-ratio-width'
+        .add '#input-ratio-height'
+        .add '#input-inches'
+        .add '#input-diagonal'
+        .add '#input-unit-from'
+        .add '#input-unit-to'
+        .on 'keyup', on-change
+        .on 'change',  on-change
+
+      $ '#times-wh'
+        .on 'click', ->
+          w = $ '#input-ratio-width' .val!
+          h = $ '#input-ratio-height' .val!
+          $ '#input-ratio-height' .val w
+          $ '#input-ratio-width' .val h
+          o
+
+      on-change!
+
+  </script>
+  <script type="text/javascript">
+    ls = require('livescript');
+    ls.go();
+  </script>
+</body>
+</html>

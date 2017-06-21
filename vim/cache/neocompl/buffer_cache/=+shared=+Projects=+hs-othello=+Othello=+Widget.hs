@@ -1,0 +1,1 @@
+{'import', 'Graphics.Rendering.OpenGL', 'newtype', 'Size', 'Position', 'data', 'WidgetState', 'State', 'label', 'String', 'bgColor', 'Float', 'position', 'size', 'clicked', 'Widget', 'Window', 'Button', 'SelectionList', 'render', 'state'}

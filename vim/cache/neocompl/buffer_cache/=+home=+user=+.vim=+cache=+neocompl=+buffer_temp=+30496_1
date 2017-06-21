@@ -1,0 +1,1 @@
+{'import', 'Test.QuickCheck.Gen', 'generate', 'shuffle', 'Data.List', 'sortOn', 'main', 'rlist', 'print'}

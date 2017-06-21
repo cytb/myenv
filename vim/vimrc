@@ -19,6 +19,8 @@ Plugin 'scrooloose/nerdtree'
 Plugin 'vim-scripts/minibufexplorerpp'
 " Plugin 'ap/vim-buftabline'
 " Plugin 'vim-scripts/BufLine'
+Plugin 'Shougo/unite.vim'
+Plugin 'eagletmt/unite-haddock'
 
 " highlight
 Plugin 'nathanaelkane/vim-indent-guides'
@@ -31,9 +33,11 @@ Plugin 'bling/vim-bufferline'
 Plugin 'cytb/vimairline-powerlineish-modified'
 
 " completion
-" Plugin 'Shougo/neocomplete.vim'
-" Plugin 'Shougo/vimproc.vim'
-Plugin 'Valloric/YouCompleteMe'
+Plugin 'Shougo/neocomplete.vim'
+" Plugin 'Shougo/neocomplcache.vim' " Obsolete
+Plugin 'Shougo/vimproc.vim'
+
+" Plugin 'Valloric/YouCompleteMe'
 
 " ocaml
 " Plugin 'vim-scripts/omlet.vim'
@@ -45,21 +49,36 @@ Plugin 'Valloric/YouCompleteMe'
 Plugin 'gkz/vim-ls'
 
 " haskell
-" Plugin 'eagletmt/neco-ghc'
-" Plugin 'mkasa/neco-ghc-lushtags'
-" Plugin 'lukerandall/haskellmode-vim'
-" Plugin 'eagletmt/ghcmod-vim'
-" Plugin 'dag/vim2hs'
-" Plugin 'pbrisbin/vim-syntax-shakespeare'
+Plugin 'eagletmt/neco-ghc'
+Plugin 'mkasa/neco-ghc-lushtags'
+Plugin 'lukerandall/haskellmode-vim'
+Plugin 'eagletmt/ghcmod-vim'
+"Plugin 'dag/vim2hs'
+"
+" Plugin 'begriffs/haskell-vim-now'
+Plugin 'pbrisbin/vim-syntax-shakespeare'
 " Plugin 'mpickering/hlint-refactor-vim'
 
 " Plugin 'cytb/hlint-refactor-vim'
 " Plugin 'xaizek/vim-inccomplete'
-" Plugin 'Igorjan94/codeforces.vim'
-
+Plugin 'Igorjan94/codeforces.vim'
+Plugin 'junegunn/vim-easy-align'
 
 call vundle#end()
 filetype plugin indent on
+
+
+"----------------------------------------------------------
+"   Utilities
+"----------------------------------------------------------
+function! SourceIfExists(file)
+  let l:expanded_path = expand(a:file)
+  if filereadable( l:expanded_path )
+    exec "source " . l:expanded_path
+  endif
+  return 0
+endfunction
+
 
 "----------------------------------------------------------
 "   sessions
@@ -190,27 +209,37 @@ set splitright
 " iunmap <C-i>
 " imap <C-i> <C-x>
 " let g:neocomplete#skip_auto_completion_time = "0.3"
-" let g:neocomplete#enable_at_startup = 1
+let g:neocomplete#enable_at_startup = 1
+let g:neocomplete#skip_auto_completion_time = "0.2"
 " disable include path completion
 " call neocomplete#custom#source('include','disabled_filetypes', {'cpp' : 1})
+let g:neocomplete#auto_completion_start_length = 3
+let g:neocomplete#sources#buffer#cache_limit_size = 500000
+let g:neocomplete#data_directory = $HOME.'/.vim/cache/neocompl'
+let g:neocomplete#min_keyword_length = 4
+let g:neocomplete#sources#syntax#min_keyword_length = 4
+let g:neocomplete#enable_smart_case = 1
+let g:neocomplete#enable_fuzzy_completion = 0
+set completeopt=preview,longest,menu
 
-let g:ycm_global_ycm_extra_conf = expand('$HOME/.vim/.ycm_extra_conf.py')
-let g:ycm_seed_identifiers_with_syntax = 1
-let g:ycm_confirm_extra_conf = 0
-let g:ycm_autoclose_preview_window_after_insertion = 0
-let g:ycm_collect_identifiers_from_tag_files = 1
+" let g:neocomplete#enable_refresh_always = 1
 
-autocmd! User YouCompleteMe if !has('vim_starting') | call youcompleteme#Enable() | endif
-
-set completeopt=longest,menu
-
-map  <C-]> :YcmCompleter GoToImprecise<CR>
+" let g:ycm_global_ycm_extra_conf = expand('$HOME/.vim/.ycm_extra_conf.py')
+" let g:ycm_seed_identifiers_with_syntax = 1
+" let g:ycm_confirm_extra_conf = 0
+" let g:ycm_autoclose_preview_window_after_insertion = 0
+" let g:ycm_collect_identifiers_from_tag_files = 1
+ 
+" autocmd! User YouCompleteMe if !has('vim_starting') | call youcompleteme#Enable() | endif
+" map  <C-]> :YcmCompleter GoToImprecise<CR>
+"
 map  <F3> :GtagsCursor<CR>
 " map <C-i> :GtagsCursor<CR>
 map  <C-/> :Gtags -g
 " map <C-D> :Cmapkeys<CR>:Cfile a.out<CR>:Cstart<CR>
 
 map \i :ghc-mod<CR>
+map \m :GhcModCheck<CR>
 
 " replace default mapped keys for haskell hlint refactor 
 let g:hlintRefactor#disableDefaultKeybindings = 1
@@ -241,10 +270,21 @@ map <C-j> :MBEbn<CR>
 map <C-k> :MBEbp<CR>
 
 "----------------------------------------------------------
+"   Unmap
+"----------------------------------------------------------
+" Close without saving
+nnoremap ZQ <Nop>
+
+" Enter EX mode
+nnoremap Q <Nop>
+
+"----------------------------------------------------------
 "   scrolling
 "----------------------------------------------------------
 " map <C-j> <C-f> 
 " map <C-k> <C-b>
+" nnoremap <Space>   <C-f> 
+" nnoremap <S-Space> <C-b>
 
 "----------------------------------------------------------
 "   remapping undo
@@ -255,15 +295,6 @@ map <C-k> :MBEbp<CR>
 "   colorscheme
 "----------------------------------------------------------
 colorscheme darkblue2
-
-"----------------------------------------------------------
-"   pathogen
-"----------------------------------------------------------
-
-" filetype off
-" call pathogen#runtime_append_all_bundles()
-" call pathogen#infect()
-filetype on
 
 "----------------------------------------------------------
 "   Filetype Mapping
@@ -288,10 +319,10 @@ autocmd FileType haskell setlocal omnifunc=necoghc#omnifunc
 " let g:haskellmode_completion_ghc = 0
 " autocmd FileType haskell :NeoCompleteAutoCompletionLength 1
 " let g:neocomplete#sources#syntax#min_keyword_length = 0
-let g:ycm_semantic_triggers = {
-  \ 'haskell' : ['.',' ','('],
-  \ 'cpp'     : ['.','(','{','->','::']
-\ }
+" let g:ycm_semantic_triggers = {
+"   \ 'haskell' : ['.',' ','('],
+"   \ 'cpp'     : ['.','(','{','->','::']
+" \ }
 
 "----------------------------------------------------------
 "   quick-run
@@ -404,7 +435,7 @@ autocmd InsertLeave * redraw!
 
 
 " remove delay on escape
-set timeout ttimeoutlen=50
+set timeout timeoutlen=500 ttimeoutlen=50
 
 
 "----------------------------------------------------------
@@ -571,8 +602,36 @@ function QuicktaskStartUp()
         call QuicktaskOpen( $HOME . '/.' . s:quicktask_filename )
     endif
 endfunction
+"----------------------------------------------------------
+"   CodeForces
+"----------------------------------------------------------
+let g:CodeForcesCount = 40
+" let g:CodeForcesContestId = 518
+" let g:CodeForcesUpdateInterval = 1
+" set count of displayed submissions to 10(default 5):
+let g:CodeForcesCountOfSubmits = 10
+let g:CodeForcesShowUnofficial = 0
+let g:CodeForcesFriends = 0
+" let g:CodeForcesCommandStandings = 'badd'
+" let g:CodeForcesCommandLoadTask = 'badd'
+" let g:CodeForcesCommandSubmission= 'badd'
 
+" /index (default) format: directory/{index}/{{index}.{ext}, {index}.problem, input{index}.in, output{index}.out}, where {index} = A, B ...
+" smthng else format: all files in one directory
+" set contest format to second one:
+" let g:CodeForcesContestFormat = 'smthngelse'
+" set filename to sample-input (default 'input'):
+" let g:CodeForcesInput = 'sampleInput'
+" set filename to sample-output (default 'output'):
+" let g:CodeForcesOutput = 'sampleOutput'
+" set filename to user-output (default 'my_output'):
+" let g:CodeForcesUserOutput = 'myCorrectOutput'
+" template file to copy in directory with samples/problem statement:
+let g:CodeForcesTemplate = expand('$HOME/codeforces/templ.cxx')
+let g:CodeForcesLang = 'en'
 
-
-
+"----------------------------------------------------------
+"   Misc
+"----------------------------------------------------------
+call SourceIfExists('$HOME/.vimrc_credentials')
 

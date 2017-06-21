@@ -1,0 +1,26 @@
+pick 896f3b0 begin to implement GLFW render. (draw table)
+pick 879046e GLFW Operatable.
+pick 92c891c intermediate commit (update GLFW almost all)
+qpick 06d338d intermediate. compilable.
+pick 418b37d intermediate 3
+pick e10a372 intermediate 4
+pick d3704fe playable (GLFW)
+
+# Rebase 6eaf781..d3704fe onto 6eaf781 (7 commands)
+#
+# Commands:
+# p, pick = use commit
+# r, reword = use commit, but edit the commit message
+# e, edit = use commit, but stop for amending
+# s, squash = use commit, but meld into previous commit
+# f, fixup = like "squash", but discard this commit's log message
+# x, exec = run command (the rest of the line) using shell
+# d, drop = remove commit
+#
+# These lines can be re-ordered; they are executed from top to bottom.
+#
+# If you remove a line here THAT COMMIT WILL BE LOST.
+#
+# However, if you remove everything, the rebase will be aborted.
+#
+# Note that empty commits are commented out

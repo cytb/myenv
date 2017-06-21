@@ -1,0 +1,514 @@
+{-# LANGUAGE OverloadedStrings, PackageImports #-}
+module Othello.Renderer.FLTK(play) where
+
+-- import Graphics.UI.GLFW as GLFW
+-- import qualified "GLFW-b" Graphics.UI.GLFW as GLFWb
+-- import Graphics.GL as RawGL
+import qualified Graphics.UI.GLFW   as GLFW
+import qualified Graphics.Rendering.OpenGL as GL
+import           Graphics.Rendering.OpenGL (($=))
+
+import qualified Graphics.UI.FLTK.LowLevel.FLTKHS          as FLTK_hs
+import qualified Graphics.UI.FLTK.LowLevel.FL              as FLTK_fl
+import qualified Graphics.UI.FLTK.LowLevel.GlWindow        as FLTK_gl
+import qualified Graphics.UI.FLTK.LowLevel.Window          as FLTK_window
+import qualified Graphics.UI.FLTK.LowLevel.Hierarchy       as FLTK_hr
+import qualified Graphics.UI.FLTK.LowLevel.Widget          as FLTK_widget
+import qualified Graphics.UI.FLTK.LowLevel.Fl_Enumerations as FLTK_en
+import qualified Graphics.UI.FLTK.LowLevel.Fl_Types        as FLTK_tp
+import qualified Data.Map.Strict as M
+import           Data.Maybe(Maybe(..),maybe)
+import           Data.IORef(newIORef, readIORef, atomicModifyIORef, atomicWriteIORef)
+import           Data.List(intercalate)
+import           Control.Arrow((***))
+import           Control.Monad (forM_, mapM_, replicateM_, when, unless)
+
+import           Othello.Core as Core
+import           Othello.Game
+import           Othello.Renderer.Common
+
+import qualified Debug.Trace as Debug
+
+
+data MouseButton = LeftButton | RightButton
+  deriving (Eq)
+
+withGLFW title windowSize ioAction = do
+  GLFW.initialize
+  -- enable antialiasing (especially for fonts)
+  GLFW.openWindowHint GLFW.FSAASamples 4
+
+  let params = [
+          GLFW.DisplayAlphaBits 8
+        , GLFW.DisplayDepthBits 16
+        ]
+    in GLFW.openWindow windowSize params GLFW.Window
+  GLFW.windowTitle $= title
+
+  -- multisample is enabled as opengl default.
+  -- GL.multisample $= GL.Enabled
+
+  -- disable auto polling in swapBuffers
+  GLFW.disableSpecial GLFW.AutoPollEvent
+
+  ioAction
+
+  -- finish up
+  GLFW.closeWindow 
+  GLFW.terminate
+  -- let stones = stones . table $ state
+
+
+fltkMousePos = do
+  x <- FLTK_fl.eventX
+  y <- FLTK_fl.eventY
+  return (x,y)
+
+
+fltkMouseButtons = do
+  left  <- FLTK_fl.eventButton1
+  right <- FLTK_fl.eventButton2
+  return (left,right)
+
+withFltk title (w,h) (renderer,handler,fWidget,fWindow) = do 
+  glWindow <- FLTK_gl.glWindowCustom 
+                (FLTK_tp.Size (FLTK_tp.Width w) (FLTK_tp.Height h))
+                Nothing
+                (Just title)
+                (Just renderer)
+                fWidget
+                fWindow
+
+  _ <- FLTK_fl.setHandler handler
+
+  {
+  begin window
+  b' <- buttonNew
+        (Rectangle (Position (X 10) (Y 30)) (Size (Width 95) (Height 30)))
+        (Just "Hello world")
+  setLabelsize b' (FontSize 10)
+  setCallback b' buttonCb
+  end window
+  showWidget window
+ _ <- FL.run
+  return ()
+
+play :: Play
+play looper initState = 
+  withFont "MTLmr3m.ttf" $ \font renderer -> do
+    glfuncs <- createFltkRenderer looper initState renderer (fx,fy) (-2000,2000)
+    withFltk "Hothello" (w,h) glfuncs
+
+  where (fx,fy) = tmap fromIntegral (w,h)
+        (w,h)   = windowSize initState
+
+
+type TextRenderer  = (Int -> Int -> String -> IO ())
+type FltkFunctions = (
+          (FLTK_tp.Ref FLTK_hr.GlWindow -> IO ())
+        , FLTK_tp.GlobalEventHandlerF
+        , FLTK_widget.CustomWidgetFuncs FLTK_hr.GlWindow
+        , FLTK_window.CustomWindowFuncs FLTK_hr.GlWindow
+        )
+
+createFltkRenderer :: Looper -> GameState -> TextRenderer -> (Float,Float) -> (Float,Float) -> IO FltkFunctions
+createFltkRenderer looper initState renderer (fx,fy) (near,far) = do
+  let textOut = renderer (floor fx `div` 64) $ (floor fx)
+
+  -- state vars
+  gameState         <- newIORef initState
+  dirty             <- newIORef True
+  quit              <- newIORef False
+  
+  stoneState        <- newIORef ((M.fromList []) :: M.Map (Int,Int) Int)
+  -- stoneState        <- newIORef ( [] :: [(Int,(Int,Int))] )
+  rotateState       <- newIORef (0,0)
+
+  posStoneMouseOver <- newIORef ( Nothing :: Maybe (Int,Int) )
+  posStoneClicked   <- newIORef ( Nothing :: Maybe (Int,Int) )
+  posClicked        <- newIORef (0,0)
+  sizeWindow        <- newIORef (0,0)
+  count             <- newIORef 0
+  mouseState        <- newIORef ( Nothing :: Maybe MouseButton )
+
+  -- utilities
+  let boardWidth, inner, sz, st :: Float
+      boardWidth = (min fy fx)
+      inner      = (boardWidth/2) - (0.03 * boardWidth)
+      sz         = fromIntegral . Core.size . table $ initState
+      st         = 2 * inner / sz
+
+      stoneThickness = (0.20*st)
+      stoneRadius    = (0.35*st) 
+
+      pointToStonePos rt mpos = do
+        glPos <- mouseToGLPos mpos
+        return $ do
+          normalized <- normalizePoint2d rt glPos
+          stonePos inner st normalized
+
+      mouseToGLPos mPos = do
+        sizeW <- readIORef sizeWindow
+        return $ mouseToGLPosWith (fx,fy) sizeW mPos
+
+      stoneLocatable stone gameState_ =
+        (isManualPlayer gameState_) && (elem stone $ movablePosList gameState_)
+
+      stoneColorCode color alpha
+        | color == White = [(1,1,1,alpha),(0,0,0,alpha)]
+        | otherwise      = [(0,0,0,alpha),(1,1,1,alpha)]
+
+      stoneHalfFace0 = circleVertices stoneRadius
+      stoneHalfFace  = map (withZ ( stoneThickness/2)) stoneHalfFace0
+      stoneHalfSide  = go stoneHalfFace stoneHalfFace0
+        where go (x1:[])    (y1:[])    = []
+              go (x1:x2:xs) (y1:y2:ys) = (x1:y1:y2:x2: go (x2:xs) (y2:ys))
+
+  -- onResize (and onOpen)
+  let fltkHandler FLTK_en.Keydown = do
+        key <- FLTK_fl.eventKey
+        case key of
+          FLTK_tp.SpecialKeyType FLTK_en.Kb_Escape ->
+            atomicWriteIORef quit True
+
+          FLTK_tp.NormalKeyType 'Q' ->
+            atomicWriteIORef quit True
+
+          FLTK_tp.NormalKeyType 'R' -> do
+            atomicWriteIORef rotateState (0,0)
+            atomicWriteIORef dirty True
+
+          _ -> return ()
+
+        return 0
+
+      fltkHandler FLTK_en.Move    = do
+        mouseState_ <- readIORef mouseState
+        (mx,my)     <- fltkMousePos
+
+        -- Right
+        case mouseState_ of
+          Just RightButton -> do
+            -- mark screen dirty
+            (px,py)           <- readIORef posClicked
+            (rx,ry)           <- readIORef rotateState
+
+            posStone <- pointToStonePos (rx,ry) (mx,my)
+
+            atomicWriteIORef posClicked        (mx,my)
+            atomicWriteIORef rotateState       (rx + (py-my), ry + (px-mx))
+            atomicWriteIORef dirty             True
+
+          Just LeftButton -> do
+            -- mark screen dirty
+            (rx,ry)           <- readIORef rotateState
+            posStone <- pointToStonePos (rx,ry) (mx,my)
+            atomicWriteIORef posStoneMouseOver posStone
+            atomicWriteIORef dirty             True
+              
+
+          Nothing -> return ()
+
+        return 0
+        
+      fltkHandler FLTK_en.Push = do
+
+        -- GL.Position mx my <- GL.get GLFW.mousePos 
+        (mx,my) <- fltkMousePos
+        buttons <- fltkMouseButtons
+
+        atomicWriteIORef posClicked (mx,my)
+
+        mouseState_ <- readIORef mouseState
+
+        when (mouseState_ == Nothing) $ case buttons of
+          (True,False) -> do
+            -- when left mouse button is pressed, add the point
+            -- to lines and switch to waitForRelease action.
+            rstate <- readIORef rotateState
+
+            sp <- pointToStonePos rstate (mx,my)
+
+            atomicWriteIORef posStoneClicked sp
+            atomicWriteIORef mouseState $ Just LeftButton
+
+          (False,True) -> do
+            atomicWriteIORef mouseState $ Just RightButton
+
+          _ -> return ()
+
+        atomicWriteIORef dirty True
+        return 0
+
+      fltkHandler FLTK_en.Release = do
+        -- when left mouse button is released, switch back to
+        -- waitForPress action.
+        state <- readIORef mouseState
+
+        left  <- FLTK_fl.eventButton1
+        right <- FLTK_fl.eventButton2
+
+        when (left && state == Just LeftButton) $ do
+          -- (GL.Position mx my) <- GL.get GLFW.mousePos
+          (mx,my)    <- fltkMousePos
+
+          gameState_        <- readIORef gameState
+          posStoneClicked_  <- readIORef posStoneClicked
+          rotateState_      <- readIORef rotateState
+
+          -- set rotate
+          atomicWriteIORef dirty True
+
+          current <- pointToStonePos rotateState_  (mx,my)
+
+          -- locate
+          (pos,locatable) <- maybe (return ((0,0),False)) return $ do
+            pos_ <- current
+            prev <- posStoneClicked_
+            let locatable_ = (pos_ == prev && stoneLocatable pos_ gameState_)
+            Just (pos_,locatable_)
+
+          when locatable $ do
+            -- set animation state
+            let color = currentStoneColor gameState_
+                lst = map snd $ reversibleStones gameState_ (color,pos)
+                dist (bx,by) (x,y) = max (abs (x - bx)) (abs (y - by))
+                insert' k = M.insert k $ -(fps gameState_) * (dist pos k - 1)
+
+            atomicModifyIORef stoneState $ \s -> (foldr insert' s lst, ())
+            atomicWriteIORef  gameState  $ makeMove gameState_ pos 
+
+            do
+              ss <- readIORef stoneState
+              putStrLn $ (show ss) ++ (show lst)
+
+          atomicWriteIORef mouseState Nothing
+
+        when ( right && state == Just RightButton ) $ do
+          atomicWriteIORef mouseState Nothing
+
+        atomicWriteIORef dirty True
+
+        return 0
+
+      fltkHandler FLTK_en.Close   = do
+        atomicWriteIORef quit True
+        return 0
+
+      fltkHandler FLTK_en.Keyup = return 0
+      fltkHandler _             = return 0
+
+  let onResize _ (FLTK_tp.Rectangle _  (FLTK_tp.Size (FLTK_tp.Width w) (FLTK_tp.Height h))) = do
+        -- compute target scale for viewport to fit direction and size appropriately.
+        let fsize  = tmap fromIntegral (w,h) :: (Float,Float)
+
+        atomicWriteIORef sizeWindow fsize
+        prepareGLRender fsize (fx,fy) (near,far)
+
+  let fltkWidgetFuncs = FLTK_widget.CustomWidgetFuncs {
+            FLTK_widget.handleCustom = Nothing
+          , FLTK_widget.showCustom   = Nothing
+          , FLTK_widget.hideCustom   = Nothing
+          , FLTK_widget.resizeCustom = Just onResize
+        }
+
+  -- renderer utils
+  let renderStone :: Float -> Float -> Stone -> IO ()
+      renderStone r alpha (color,stonePos_) = GL.preservingMatrix $ do
+        let (x,y,z) = stonePosOnBoard inner st stonePos_
+        translate3 (x,y,z + sin (pi*r) * stoneRadius)
+        rotate3 (-180 * (1-r)) (1,0,0)
+        forM_ (stoneColorCode color alpha) $ \code -> do
+          color4 code
+          GL.renderPrimitive GL.Polygon $ mapM_ vertex3 stoneHalfFace
+          GL.renderPrimitive GL.Quads   $ mapM_ vertex3 stoneHalfSide
+          rotate3 180 (1,1,0)
+
+  -- renderers
+  let renderBackground = GL.preservingMatrix $ do
+        color3 (0.8,0.5,0.3)
+        GL.lineWidth $= 1.0
+        GL.renderPrimitive GL.Quads $ do
+          mapM_ vertex3 $ square (boardWidth)
+
+  let renderBoard = GL.preservingMatrix $ do
+        color3 (0.2,0.5,0.2)
+        GL.lineWidth $= 1.0
+        GL.renderPrimitive GL.Quads $ do
+          let vBoard = square (boardWidth/2)
+          mapM_ vertex3 $ vBoard
+          mapM_ (vertex3 . withZ (-1)) . reverse $ vBoard
+          -- mapM_ normal3 $ replicate 3 (0,0,1)
+
+  let renderStones stoneState gameState_ = GL.preservingMatrix $ do
+
+        let nextFrame steps | steps < fps gameState_ = Just (steps + 1)
+                            | otherwise = Nothing
+
+        translate3 (0,0,stoneThickness/2)
+
+        forM_ (stones . table $ gameState_) $ \stone -> GL.preservingMatrix $ do
+          stoneState_ <- readIORef stoneState
+          let pos = snd stone
+
+          r <- case M.lookup pos stoneState_ of
+            Nothing    -> return 1
+            Just steps -> do
+              let updated = M.update nextFrame pos stoneState_
+                  ratio   = fromIntegral steps / fromIntegral (fps gameState_)
+
+              atomicWriteIORef stoneState updated
+              return (max ratio 0)
+
+          GL.preservingMatrix $ renderStone r 1.0 stone
+          
+
+  let renderLocatableStone Nothing          _           _          = return ()
+      renderLocatableStone (Just posStone_) stoneState_ gameState_ =
+        let stoneColor = currentStoneColor gameState_
+        in when (stoneLocatable posStone_ gameState_ && M.null stoneState_ ) $ do 
+            translate3 (0,0,stoneThickness/2)
+            renderStone 1 0.3 (stoneColor,posStone_)
+
+  let renderDebugPoints rotateState_ mp = GL.preservingMatrix $ do
+        glpos <- mouseToGLPos mp
+        case (normalizePoint2d rotateState_ glpos) of
+          Nothing -> return ()
+          Just (nx,ny) -> do
+            color3 (1,0,0)
+            translate3 (nx,ny,10)
+            GL.renderPrimitive GL.Polygon .
+              mapM_ vertex3 $ circleVertices (st*0.1)
+            translate3 (st*0.2,0,0)
+            textOut $ show mp
+
+  let renderDebugTexts ps count_ gameState_ = GL.preservingMatrix $ do
+        color3 (1,0,1)
+        translate3 (0,0,1)
+        textOut $ "Test! count = " ++ show count_
+        translate3 (0,-50,0)
+        textOut $ "StonePos =" ++ show ps
+        translate3 (-100,-20,0)
+        forM_ (stones . table $ gameState_) $ \s -> do
+          translate3 (0,-12,0)
+          textOut $ show s
+
+  let renderOuterBoader = GL.preservingMatrix $ do
+        color3 (0,0,0)
+        GL.lineWidth $= 5.0
+        replicateM_ 4 $ do
+          GL.renderPrimitive GL.Lines $ do
+            vertex3 (inner, inner,0)
+            vertex3 (inner,-inner,0)
+          rotate3 90 (0,0,1)
+
+  let renderInnerBoader = GL.preservingMatrix $ do
+        color3 (0,0,0)
+        GL.lineWidth $= 1.0
+        replicateM_ 2 $ do
+          let pts = (Core.size . table $ initState) - 1
+              ls  = [ (st * fromIntegral x) | x <- [ 1 .. pts ] ]
+          GL.renderPrimitive GL.Lines . forM_ ls $ \p -> do
+            vertex3 (p-inner,-inner,0)
+            vertex3 (p-inner, inner,0)
+          rotate3 90 (0,0,1)
+
+  let renderMarkerPoints = GL.preservingMatrix $ do
+        let n = st*(sz-4)/2
+        color3 (0,0,0)
+        replicateM_ 4 $ do
+          GL.preservingMatrix $ do
+            translate3 (n,n,0)
+            GL.renderPrimitive GL.Polygon .
+              mapM_ vertex3 $ circleVertices (st*0.075)
+          rotate3 90 (0,0,1)
+
+
+  let render = do
+
+        (mx,my)    <- fltkMousePos
+        gameState_ <- readIORef gameState
+
+        (rx,ry) <- readIORef rotateState 
+        count_     <- readIORef count
+
+        stoneState_ <- readIORef stoneState
+
+        sp <- pointToStonePos (rx,ry) (mx,my)
+
+        GL.clearColor $= GL.Color4 0 0 0 0
+        GL.clearDepth $= 1.0
+        GL.clear [GL.ColorBuffer,GL.DepthBuffer]
+
+        -- render board
+        withTexture GL.Texture3D . GL.preservingMatrix $ do
+
+          setupLights
+
+          renderBackground
+
+          -- bring front, and rotate
+          do translate3 (0,0,boardWidth*1.5)
+             rotate3 (fromIntegral rx) (1,0,0)
+             rotate3 (fromIntegral ry) (0,1,0)
+          
+          renderBoard
+
+          -- float a bit
+          translate3 (0,0,0.001*boardWidth)
+
+          -- render lines
+          renderOuterBoader
+          renderInnerBoader
+          renderMarkerPoints
+
+          -- render stones
+          renderStones stoneState gameState_
+          renderLocatableStone sp stoneState_ gameState_
+
+          -- render debug info
+          renderDebugPoints (rx,ry) (mx,my)
+          renderDebugTexts sp count_ gameState_
+
+        atomicModifyIORef count (\x -> (x + 1, ()))
+
+        -- color3 1 1 1
+        -- GL.rasterPos (GL.Vertex3 wy 0 -1)
+        -- GL.print (show c)
+        GL.flush
+
+
+  let glRenderer _ = do
+        -- GLFW.waitEvents
+
+        dirty_ <- readIORef dirty
+        quit_  <- readIORef quit
+
+        when (dirty_ && not quit_ ) $ do 
+          atomicModifyIORef count (\x -> (x + 1, ()))
+
+          stoneState_ <- readIORef stoneState
+
+          when (M.null stoneState_) $ do
+            gameState_ <- readIORef gameState >>= looper 0.0
+            atomicWriteIORef gameState gameState_
+          -- l <- readIORef lines
+          GL.clear [GL.ColorBuffer]
+          render
+          -- color3 1 1 1
+          -- GL.rasterPos (GL.Vertex3 wy 0 -1)
+          -- GL.print (show c)
+          -- GLFW.swapBuffers
+
+        atomicWriteIORef dirty False
+
+  return (glRenderer,fltkHandler,fltkWidgetFuncs,FLTK_window.defaultCustomWindowFuncs)
+
+stonePosOnBoard inner st (sx,sy) = (convertPos sx - inner, inner - convertPos sy, 0)
+  where convertPos x = (fromIntegral x + 0.5) * st
+
+stonePos inner st (x,y)
+    | abs x > inner = Nothing
+    | abs y > inner = Nothing
+    | otherwise     = Just . tmap (floor . (/ st) . (+ inner)) $ (x,-y)
+
