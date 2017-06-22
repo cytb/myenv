@@ -1,11 +1,8 @@
 /vim/bundle
+/vim/plugged
+!/vim/plugged/vim-plug/autoload/plug.vim
 /vim/sessions
 /vim/.*
 /vim/cache
 !/vim/.vimrc
-/neovim/bundle
-/neovim/sessions
-/neovim/.*
-/neovim/cache
-!/neovim/.vimrc
 
