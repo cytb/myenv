@@ -4,38 +4,41 @@ syntax on
 "----------------------------------------------------------
 set nocompatible
 filetype off
-set rtp+=~/.vim/bundle/Vundle.vim
-call vundle#begin()
+if has("nvim")
+  set rtp+=~/.vim/plugged/vim-plug
+endif
+" call vundle#begin()
+call plug#begin('~/.vim/plugged')
 
 " basic
-Plugin 'gmarik/Vundle.vim'
-Plugin 'thinca/vim-quickrun'
-Plugin 'fweep/vim-tabber'
-Plugin 'xolox/vim-misc'
-Plugin 'xolox/vim-session'
+" Plug 'gmarik/Vundle.vim'
+Plug 'junegunn/vim-plug', {'dir': '~/.vim/plugged/vim-plug/autoload'}
+Plug 'thinca/vim-quickrun'
+Plug 'fweep/vim-tabber'
+" Plug 'xolox/vim-misc'
+" Plug 'xolox/vim-session'
 
 " ui
-Plugin 'scrooloose/nerdtree'
-Plugin 'vim-scripts/minibufexplorerpp'
+Plug 'scrooloose/nerdtree'
+Plug 'vim-scripts/minibufexplorerpp'
 " Plugin 'ap/vim-buftabline'
 " Plugin 'vim-scripts/BufLine'
-Plugin 'Shougo/unite.vim'
-Plugin 'eagletmt/unite-haddock'
+" Plug 'Shougo/unite.vim'
+" Plug 'eagletmt/unite-haddock'
 
 " highlight
-Plugin 'nathanaelkane/vim-indent-guides'
+Plug 'nathanaelkane/vim-indent-guides'
 
 " appearance
-Plugin 'edkolev/promptline.vim'
-Plugin 'edkolev/tmuxline.vim'
-Plugin 'bling/vim-airline'
-Plugin 'bling/vim-bufferline'
-Plugin 'cytb/vimairline-powerlineish-modified'
+Plug 'edkolev/promptline.vim'
+Plug 'edkolev/tmuxline.vim'
+Plug 'bling/vim-airline'
+Plug 'bling/vim-bufferline'
+Plug 'cytb/vimairline-powerlineish-modified'
 
 " completion
-Plugin 'Shougo/neocomplete.vim'
-" Plugin 'Shougo/neocomplcache.vim' " Obsolete
-Plugin 'Shougo/vimproc.vim'
+Plug 'Shougo/vimproc.vim'
+Plug 'Shougo/deoplete.nvim', { 'do': ':UpdateRemotePlugins' }
 
 " Plugin 'Valloric/YouCompleteMe'
 
@@ -46,25 +49,26 @@ Plugin 'Shougo/vimproc.vim'
 " Plugin 'Rip-Rip/clang_complete'
 
 " ls
-Plugin 'gkz/vim-ls'
+Plug 'gkz/vim-ls'
 
 " haskell
-Plugin 'eagletmt/neco-ghc'
-Plugin 'mkasa/neco-ghc-lushtags'
-Plugin 'lukerandall/haskellmode-vim'
-Plugin 'eagletmt/ghcmod-vim'
-"Plugin 'dag/vim2hs'
+Plug 'eagletmt/neco-ghc'
+" Plug 'mkasa/neco-ghc-lushtags'
+" Plug 'parsonsmatt/intero-neovim'
+" Plug 'lukerandall/haskellmode-vim'
+Plug 'eagletmt/ghcmod-vim'
+" Plugin 'dag/vim2hs'
 "
 " Plugin 'begriffs/haskell-vim-now'
-Plugin 'pbrisbin/vim-syntax-shakespeare'
+Plug 'pbrisbin/vim-syntax-shakespeare'
 " Plugin 'mpickering/hlint-refactor-vim'
 
 " Plugin 'cytb/hlint-refactor-vim'
 " Plugin 'xaizek/vim-inccomplete'
-Plugin 'Igorjan94/codeforces.vim'
-Plugin 'junegunn/vim-easy-align'
+Plug 'Igorjan94/codeforces.vim'
+" Plug 'junegunn/vim-easy-align'
 
-call vundle#end()
+call plug#end()
 filetype plugin indent on
 
 
@@ -208,27 +212,15 @@ set splitright
 "----------------------------------------------------------
 " iunmap <C-i>
 " imap <C-i> <C-x>
-" let g:neocomplete#skip_auto_completion_time = "0.3"
-let g:neocomplete#enable_at_startup = 1
-let g:neocomplete#skip_auto_completion_time = "0.2"
+let g:deoplete#enable_at_startup = 1
+let g:deoplete#max_abbr_width = 100
+let g:deoplete#max_menu_width = 100
+" let g:deoplete#sources = {}
+" let g:deoplete#sources._ = ['buffer', 'tag']
+let deoplete#tag#cache_limit_size = 50000000
+
 " disable include path completion
-" call neocomplete#custom#source('include','disabled_filetypes', {'cpp' : 1})
-let g:neocomplete#auto_completion_start_length = 3
-let g:neocomplete#sources#buffer#cache_limit_size = 500000
-let g:neocomplete#data_directory = $HOME.'/.vim/cache/neocompl'
-let g:neocomplete#min_keyword_length = 4
-let g:neocomplete#sources#syntax#min_keyword_length = 4
-let g:neocomplete#enable_smart_case = 1
-let g:neocomplete#enable_fuzzy_completion = 0
 set completeopt=preview,longest,menu
-
-" let g:neocomplete#enable_refresh_always = 1
-
-" let g:ycm_global_ycm_extra_conf = expand('$HOME/.vim/.ycm_extra_conf.py')
-" let g:ycm_seed_identifiers_with_syntax = 1
-" let g:ycm_confirm_extra_conf = 0
-" let g:ycm_autoclose_preview_window_after_insertion = 0
-" let g:ycm_collect_identifiers_from_tag_files = 1
  
 " autocmd! User YouCompleteMe if !has('vim_starting') | call youcompleteme#Enable() | endif
 " map  <C-]> :YcmCompleter GoToImprecise<CR>
@@ -239,10 +231,10 @@ map  <C-/> :Gtags -g
 " map <C-D> :Cmapkeys<CR>:Cfile a.out<CR>:Cstart<CR>
 
 map \i :ghc-mod<CR>
-map \m :GhcModCheck<CR>
+map \m :GhcModCheckAsync<CR>
 
 " replace default mapped keys for haskell hlint refactor 
-let g:hlintRefactor#disableDefaultKeybindings = 1
+" let g:hlintRefactor#disableDefaultKeybindings = 1
 map \hh :call ApplyOneSuggestion()<CR>
 map \ha :call ApplyAllSuggestions()<CR>
 
@@ -313,16 +305,10 @@ syn region htmlLsCustom start=+<script.*type=\(["']\)text\/ls\1.*>+
 "----------------------------------------------------------
 "   Haskell
 "----------------------------------------------------------
-let g:necoghc_enable_detailed_browse = 1
 let g:haskellmode_completion_ghc = 0
-autocmd FileType haskell setlocal omnifunc=necoghc#omnifunc
-" let g:haskellmode_completion_ghc = 0
-" autocmd FileType haskell :NeoCompleteAutoCompletionLength 1
-" let g:neocomplete#sources#syntax#min_keyword_length = 0
-" let g:ycm_semantic_triggers = {
-"   \ 'haskell' : ['.',' ','('],
-"   \ 'cpp'     : ['.','(','{','->','::']
-" \ }
+let g:necoghc_enable_detailed_browse = 1
+let g:necoghc_debug = 1
+" autocmd FileType haskell setlocal omnifunc=necoghc#omnifunc
 
 "----------------------------------------------------------
 "   quick-run
@@ -435,7 +421,7 @@ autocmd InsertLeave * redraw!
 
 
 " remove delay on escape
-set timeout timeoutlen=500 ttimeoutlen=50
+" set timeout timeoutlen=500 ttimeoutlen=50
 
 
 "----------------------------------------------------------
