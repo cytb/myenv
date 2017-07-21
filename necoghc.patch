@@ -1,0 +1,14 @@
+diff --git a/autoload/necoghc.vim b/autoload/necoghc.vim
+index ff0b8c7..faf9c8b 100644
+--- a/autoload/necoghc.vim
++++ b/autoload/necoghc.vim
+@@ -348,6 +348,9 @@ endfunction"}}}
+ function! s:ghc_mod_caching_async(lines, mod) abort "{{{
+   let l:dict = {}
+   for l:line in a:lines
++    if empty(l:line)
++      continue
++    endif
+     let l:m = matchlist(l:line, '^\(class\|data\|type\|newtype\) \(\S\+\)\( .\+\)\?$')
+     if !empty(l:m)
+       let l:dict[l:m[2]] = {'kind': l:m[1], 'args': l:m[3][1 :]}

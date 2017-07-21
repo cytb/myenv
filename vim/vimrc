@@ -4,9 +4,8 @@ syntax on
 "----------------------------------------------------------
 set nocompatible
 filetype off
-if has("nvim")
-  set rtp+=~/.vim/plugged/vim-plug
-endif
+set rtp+=~/.vim/plugged/vim-plug
+
 " call vundle#begin()
 call plug#begin('~/.vim/plugged')
 
@@ -129,14 +128,12 @@ let g:airline#extensions#bufferline#enabled = 1
 " let g:promptline_preset = 'full'
 " let g:airline_theme='powerlineish'
 " let g:airline_theme='luna'
-let g:airline_theme='luna'
+let g:airline_theme           = 'luna'
 let g:airline_powerline_fonts = 1
-
-let g:tmuxline_preset = 'powerline'
-let g:tmuxline_theme = 'airline'
-
-let g:promptline_theme = 'airline'
-let g:promptline_preset = {
+let g:tmuxline_preset         = 'powerline'
+let g:tmuxline_theme          = 'airline'
+let g:promptline_theme        = 'airline'
+let g:promptline_preset       = {
   \'a' : [ promptline#slices#host() ],
   \'b' : [ '$USER'],
   \'c' : [ promptline#slices#cwd() ],
@@ -146,7 +143,7 @@ let g:promptline_preset = {
 
 function! WriteAirlineSnapshotFunc()
   let l:basePath = expand('$HOME/environment')
-  execute ':TmuxlineSnapshot! ' . l:basePath . '/tmuxline.sh'
+  execute ':TmuxlineSnapshot! '   . l:basePath . '/tmuxline.sh'
   execute ':PromptlineSnapshot! ' . l:basePath . '/promptline.sh'
 endfunction
 
@@ -163,7 +160,6 @@ set softtabstop=2
 set tabstop=2
 set shiftwidth=2
 set expandtab
-set smartindent
 set smartindent
 
 set foldmethod=marker
@@ -212,12 +208,19 @@ set splitright
 "----------------------------------------------------------
 " iunmap <C-i>
 " imap <C-i> <C-x>
-let g:deoplete#enable_at_startup = 1
-let g:deoplete#max_abbr_width = 100
-let g:deoplete#max_menu_width = 100
+let g:deoplete#enable_at_startup          = 1
+let g:deoplete#max_abbr_width             = 1000
+let g:deoplete#max_menu_width             = 1000
+let g:deoplete#tag#cache_limit_size       = 50000000
+let g:deoplete#auto_complete_delay        = 0
+let g:deoplete#auto_complete_start_length = 1
+let g:deoplete#enable_camel_case          = 0
+let g:deoplete#enable_ignore_case         = 0
+let g:deoplete#enable_refresh_always      = 0
+let g:deoplete#enable_smart_case          = 1
+let g:deoplete#file#enable_buffer_path    = 1
 " let g:deoplete#sources = {}
 " let g:deoplete#sources._ = ['buffer', 'tag']
-let deoplete#tag#cache_limit_size = 50000000
 
 " disable include path completion
 set completeopt=preview,longest,menu
@@ -238,9 +241,10 @@ map \m :GhcModCheckAsync<CR>
 map \hh :call ApplyOneSuggestion()<CR>
 map \ha :call ApplyAllSuggestions()<CR>
 
-augroup ghcmodcheck
-  autocmd! BufWritePost <buffer> if exists(":GhcModCheckAsync") | exec ":GhcModCheckAsync" | endif
-augroup END
+" augroup ghcmodcheck
+"   autocmd!
+"   autocmd BufWritePost *.hs if exists(":GhcModCheckAsync") | exec ":GhcModCheckAsync" | endif
+" augroup END
 
 "----------------------------------------------------------
 "   Window commands
@@ -256,10 +260,16 @@ map <C-t>n :tabnew<CR>
 map <C-t>c :tabclose<CR>
 
 " MiniBufExplorer
-" map <C-Tab> :MBEbn<CR>
+" map <C-Tab>   :MBEbn<CR>
+" map <Tab>   :MBEbn<CR>
 " map <C-S-Tab> :MBEbp<CR>
+" map <S-Tab> :MBEbp<CR>
+
 map <C-j> :MBEbn<CR>
 map <C-k> :MBEbp<CR>
+
+" map <C-w> :bd<CR>
+
 
 "----------------------------------------------------------
 "   Unmap
@@ -293,7 +303,6 @@ colorscheme darkblue2
 "----------------------------------------------------------
 au BufRead,BufNewFile *.fr set filetype=haskell
 au BufRead,BufNewFile *.gradle set filetype=groovy
-
 
 "----------------------------------------------------------
 "   Additional Syntax
@@ -377,12 +386,13 @@ let g:haddock_browser = 0
 " function! LiveScript(...)
 "   !livescript {join(a:000,' ')}
 " endfunction
-autocmd BufWritePost *.coffee silent CoffeeMake! -cb | cwindow | redraw!
+augroup CofeeMake
+  autocmd!
+  autocmd BufWritePost *.coffee silent CoffeeMake! -cb | cwindow | redrawaugroup CofeeMake
+augroup END
 
 " livescript On Save 
 " autocmd BufWritePost *.ls     silent LiveScriptMake! -cb  | cwindow | redraw!
-
-
 
 "----------------------------------------------------------
 "   fcitx Switching
@@ -416,18 +426,14 @@ autocmd InsertLeave * call Fcitx_switch(0)
 autocmd InsertEnter * call Fcitx_switch(1)
 autocmd VimLeave    * call Fcitx_switch(1)
 
-
 autocmd InsertLeave * redraw!
-
 
 " remove delay on escape
 " set timeout timeoutlen=500 ttimeoutlen=50
 
-
 "----------------------------------------------------------
 "   set Layout
 "----------------------------------------------------------
-
 function! WinCmdSingle(str)
     execute ("wincmd " . a:str )
     return a:str
@@ -443,8 +449,6 @@ function! WinCmdList(strw)
     call map( listw, 'WinCmdSingle(v:val)' )
     return 
 endfunction
-
-
 
 function! StartupLayoutWithConqueTerm(leftpane,bottompane)
     stopinsert 
@@ -582,12 +586,12 @@ function! QuicktaskOpen(file)
     return 0
 endfunction
 
-
 function QuicktaskStartUp()
     if( QuicktaskOpen( './' . s:quicktask_filename ) == 0 )
         call QuicktaskOpen( $HOME . '/.' . s:quicktask_filename )
     endif
 endfunction
+
 "----------------------------------------------------------
 "   CodeForces
 "----------------------------------------------------------
